@@ -33,12 +33,13 @@ $('#s-rolar').onclick = () => {
   const valor = base === 'valor';
   const nivelAtr = num((valor ? 'coracao' : 'astucia') + '_nivel');
   if (nivelAtr === null) return ($('#s-res').textContent = 'Preencha o Nível do Atributo (Coração para VALOR, Astúcia para SABEDORIA).');
-  const na = 20 - nivelAtr, notas = [];
+  const na = naDe(valor ? 'coracao' : 'astucia'), notas = [];
   let dados = nivel(valor ? 'coracao_valor' : 'astucia_valor'), modo = 'n';
   if (c === CULTURAS.hobbits && fonte === 'ganancia') { dados++; notas.push('Bom-senso Hobbit: +1d'); }
   if (tem('indomavel') && fonte === 'feiticaria') { dados++; notas.push('Espírito Indomável: +1d'); }
   if (tem('vontade') && fonte === 'pavor') { dados++; notas.push('Força de Vontade: +1d'); }
   if (tem('invisivel') && fonte === 'pavor') { modo = 'f'; notas.push('Contra o Invisível: Favorecido'); }
+  if ((valor && c?.favValor) || (!valor && c?.favSab)) { modo = 'f'; notas.push(valor ? 'Coração Forte: VALOR Favorecido' : 'Bom-senso Hobbit: SABEDORIA Favorecida'); }
   const me = maxEsp();
   if (me != null && (num('sombra') || 0) >= me) { modo = modo === 'f' ? 'n' : 'd'; notas.push('Sombra no limite: Desfavorecido'); }
   if ($('#s-esp').checked) {
@@ -71,7 +72,8 @@ $('#dlg-sombra').addEventListener('click', (e) => {
     state.cicatrizes = String(cic + 1); state.sombra = String(cic + 1);
     aplicar(true); salvar(); statusSombra(); return ($('#s-ajuda').textContent = 'Vontade firmada: a Sombra virou 1 Cicatriz de Sombra permanente.');
   }
-  if (a === 'recup') { const ganho = num('coracao_nivel') || 0; return mudar('esp_atual', ganho, me); }
+  if (a === 'recup' || a === 'yule') { delete state.elb_usos; delete state.prem_usos; }
+  if (a === 'recup') { const ganho = num('coracao_nivel') || 0; return mudar('esp_atual', ganho + (ganho > 0 && tem('fumo') ? 1 : 0), me); }
   if (a === 'yule') { if (me == null) return; state.esp_atual = String(me); aplicar(true); salvar(); return statusSombra(); }
   if (/^rem\d$/.test(a)) { state.sombra = String(Math.max(cic, som - +a[3])); aplicar(true); salvar(); statusSombra(); }
 });

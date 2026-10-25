@@ -6,10 +6,8 @@ function mostrar(v) {
   for (const k in VISTAS) VISTAS[k].hidden = k !== v;
   const hub = v === 'hub';
   document.body.dataset.vista = hub ? 'hub' : 'ficha';
-  $('#voltar').hidden = hub; $('#abas').hidden = hub; $('#menu').hidden = hub;
-  $('#menu').open = false;
-  $$('#abas button').forEach(b => b.classList.toggle('on', b.dataset.aba === v));
-  $('#titulo-barra').textContent = hub ? 'O Um Anel – Fichas' : (state.nome || 'Sem nome');
+  $('#voltar').hidden = hub; $('#abas').hidden = hub;
+  $$('#abas button').forEach(b => { const on = b.dataset.aba === v; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
   window.scrollTo(0, 0);
 }
 
@@ -69,12 +67,7 @@ $('#importar').onchange = async (e) => {
   e.target.value = '';
 };
 $('#voltar').onclick = voltarHub;
-$('#exportar').onclick = () => baixar(state, state.nome);
-$('#novo').onclick = () => confirmar('Limpar esta ficha?', 'Todos os dados desta ficha serão apagados. Exporte antes se quiser guardá-la.', () => { state = {}; db.fichas[db.ativo] = state; Object.keys(ultimo).forEach(k => delete ultimo[k]); aplicar(true); renderRetrato(); salvar(); }, 'Limpar');
 $$('#abas button').forEach(b => b.onclick = () => mostrar(b.dataset.aba));
-document.addEventListener('input', (e) => { if (e.target.dataset?.k === 'nome') $('#titulo-barra').textContent = state.nome || 'Sem nome'; });
-// menu: fecha ao escolher um item ou tocar fora
-document.addEventListener('click', (e) => { const m = $('#menu'); if (m.open && (e.target.closest('.menu-itens button') || !e.target.closest('#menu'))) m.open = false; });
 
 // ---------- retrato ----------
 let retratoId = null;
@@ -93,7 +86,6 @@ function definirRetrato(v) {
   salvar(); renderRetrato(); renderHub(); $('#dlg-retrato').close();
 }
 $('#retrato').onclick = () => abrirRetrato(db.ativo);
-$('#m-retrato').onclick = () => abrirRetrato(db.ativo);
 $('#ret-fechar').onclick = () => $('#dlg-retrato').close();
 $('#ret-remover').onclick = () => definirRetrato('');
 $('#ret-usar').onclick = () => { const u = $('#ret-url').value.trim(); if (/^https?:\/\//i.test(u)) definirRetrato(u); else avisar('Cole um endereço que comece com http:// ou https://'); };
@@ -163,3 +155,13 @@ const aplicarOriginal = aplicar;
 aplicar = function (i) { aplicarOriginal(i); renderMapa(); };
 
 renderHub(); mostrar('hub'); aplicar(true);
+
+// ---------- Tema claro/escuro (claro por padrão; segue só a sua escolha) ----------
+(function () {
+  const chave = 'um-anel-tema', raiz = document.documentElement, b = $('#tema');
+  let atual = 'light';
+  try { atual = localStorage.getItem(chave) === 'dark' ? 'dark' : 'light'; } catch {}
+  const pintar = () => { raiz.dataset.theme = atual; b.setAttribute('aria-pressed', String(atual === 'dark')); b.title = atual === 'dark' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'; };
+  b.onclick = () => { atual = atual === 'dark' ? 'light' : 'dark'; pintar(); try { localStorage.setItem(chave, atual); } catch {} };
+  pintar();
+})();

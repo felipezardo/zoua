@@ -58,11 +58,11 @@ const RECOMPENSAS = [
 // Virtudes: uma na criação (SABEDORIA 1) e uma nova a cada nível de SABEDORIA.
 // As Culturais só entram a partir de SABEDORIA 2 e só para a própria Cultura. ef = efeito automático.
 const VIRTUDES = [
-  { id: 'dom', nome: 'Dom', desc: 'Reduza em 1 o NA de um Atributo (aumente o Nível dele em 1 à mão).' },
+  { id: 'dom', nome: 'Dom', desc: 'Reduza em 1 o NA de um Atributo à sua escolha (escolha abaixo).' },
   { id: 'confianca', nome: 'Confiança', desc: 'Esperança máxima +2.', ef: { esp: 2 } },
   { id: 'destreza', nome: 'Destreza', desc: 'Bloqueio +1.', ef: { blo: 1 } },
-  { id: 'maestria', nome: 'Maestria', desc: 'Escolha duas Perícias e torne-as Favorecidas (marque as caixas).' },
-  { id: 'maos', nome: 'Mãos Inclementes', desc: 'No Dano Especial: +1 FORÇA no Golpe Pesado e +1 no Dado de Façanha do Perfurar.' },
+  { id: 'maestria', nome: 'Maestria', desc: 'Escolha duas Perícias e torne-as Favorecidas (escolha abaixo).' },
+  { id: 'maos', nome: 'Mãos Inclementes', desc: 'Ao infligir Dano Especial, soma +1 à sua FORÇA num Golpe Pesado e +1 ao resultado numérico do Dado de Façanha num Perfurante.' },
   { id: 'resiliencia', nome: 'Resiliência', desc: 'Resistência máxima +2, ou o valor de SABEDORIA se maior.', ef: { res: 'sab' } },
   // Anões
   { c: 'anoes', id: 'baruk', nome: 'Baruk Khazâd!', desc: 'Uma vez por combate, na Vanguarda: ataque Favorecido e Intimidar Inimigo como ação secundária.' },
@@ -70,7 +70,7 @@ const VIRTUDES = [
   { c: 'anoes', id: 'duro', nome: 'Duro como Pedra', desc: 'Resistência máxima +1. Jogadas de PROTEÇÃO Favorecidas enquanto não Arrasado.', ef: { res: 1 } },
   { c: 'anoes', id: 'escuro', nome: 'Escuro para Negócios Obscuros', desc: 'No escuro (noite ou subsolo) você está Inspirado em todas as jogadas.' },
   { c: 'anoes', id: 'indomavel', nome: 'Espírito Indomável', desc: 'Esperança máxima +1 e (1d) nos Testes de Sombra contra Feitiçaria.', ef: { esp: 1 } },
-  { c: 'anoes', id: 'encantamentos', nome: 'Pedaços de Encantamentos', desc: 'Marque 3 Perícias com ao menos 1 nível; ao usá-las, gaste 1 Esperança para um sucesso Mágico.' },
+  { c: 'anoes', id: 'encantamentos', nome: 'Pedaços de Encantamentos', desc: 'Escolha 3 Perícias com ao menos 1 nível (abaixo); ao usá-las, gaste 1 Esperança para um sucesso Mágico.' },
   // Bardeses
   { c: 'bardeses', id: 'amigo', nome: 'Amigo dos Anões', desc: 'Foco de Sociedade Anão: Proteger Companheiro como ação secundária; anões sempre amigáveis no Conselho.' },
   { c: 'bardeses', id: 'cram', nome: 'Cram', desc: 'Cada evento de Jornada dá 1 Fadiga a menos; no Descanso Curto a Companhia recupera Resistência extra igual à sua SABEDORIA.' },
@@ -181,3 +181,57 @@ const NOTAVEIS = {
   'Sutil': 'Você pode não ser mago, mas costuma atingir seus objetivos por meios astutos, se não desonestos.',
   'Teimoso': 'Você é firme de temperamento e crenças e costuma agir apenas por seu próprio julgamento.',
 };
+
+// ---------- Explicações (botões "i") ----------
+const INFO = {
+  forca: { titulo: 'Força',
+    texto: 'A aptidão física do herói: vigor, agilidade e boa forma. Quem tem Força alta costuma ser imponente, ter voz clara, bons sentidos e mãos hábeis.',
+    deriva: 'Define a Resistência e o NA das Perícias de Força (NA = 20 − Força).',
+    pericias: [
+      ['Fascínio', 'Impor respeito e causar a primeira impressão: reverência, admiração ou medo.', 'entrar impressionante num salão; intimidar inimigos'],
+      ['Atletismo', 'Atividades físicas em geral: correr, pular, escalar, nadar.', 'subir numa árvore para fugir de lobos'],
+      ['Vigilância', 'Prontidão para reagir e notar algo inesperado ou difícil de perceber; essencial para vigiar.', 'ouvir passos durante o turno de vigia'],
+      ['Caçada', 'Caçar, seguir rastros, identificar presas, montar armadilhas e treinar cães ou aves.', 'seguir a trilha de uma criatura pela mata'],
+      ['Música', 'Recitar poemas, cantar ou tocar instrumentos próprios da sua Cultura.', 'cantar para animar a Companhia'],
+      ['Ofício', 'Fazer ou consertar coisas com as mãos.', 'consertar a roda de uma carroça ou acender uma fogueira no vento'] ] },
+  coracao: { titulo: 'Coração', 
+    texto: 'A força do espírito do herói: coragem, carisma e empatia. Quem tem Coração alto lidera, guia, entende os outros e sabe curar.',
+    deriva: 'Define a Esperança e o NA das Perícias de Coração, além de Valor (NA = 20 − Coração).',
+    pericias: [
+      ['Indução', 'Inflamar sentimentos positivos nos outros pelo exemplo e pela convicção (não por argumentos); funciona bem com multidões.', 'encorajar um grupo assustado a seguir em frente'],
+      ['Viagem', 'Suportar e conduzir longas jornadas por terras ermas.', 'guiar a Companhia por uma estrada longa e cansativa'],
+      ['Discernimento', 'Ver além das aparências e perceber pensamentos e crenças ocultos (não revela mentiras).', 'avaliar as verdadeiras intenções de um estranho'],
+      ['Cura', 'Aliviar a dor e tratar ferimentos: ossos, ervas e pomadas.', 'cuidar de uma ferida grave de um companheiro'],
+      ['Cortesia', 'Seguir as normas de decência e as antigas convenções para causar boa impressão.', 'saudar corretamente um anfitrião nobre'],
+      ['Batalha', 'Compreensão tática: ganhar vantagem contra grupos e comandar tropas (não é o ataque individual).', 'ler o campo de batalha e posicionar os aliados'] ] },
+  astucia: { titulo: 'Astúcia',
+    texto: 'A aptidão mental do herói: raciocínio rápido, criatividade e atenção. Quem tem Astúcia alta fala bem, é ladino, observador e estudioso.',
+    deriva: 'Define o Bloqueio e o NA das Perícias de Astúcia, além de Sabedoria (NA = 20 − Astúcia).',
+    pericias: [
+      ['Persuasão', 'Convencer outros com argumentos; mais lenta que as demais Perícias sociais, porém mais duradoura.', 'convencer um mercador a ajudar a Companhia'],
+      ['Furtividade', 'Esconder-se, mover-se em silêncio e seguir alguém sem ser notado.', 'passar por um guarda sem ser visto'],
+      ['Busca', 'Examinar algo de perto: portas ocultas, inscrições, rastros, uma informação num livro.', 'achar uma passagem secreta'],
+      ['Exploração', 'Orientar-se em terra desconhecida, enfrentar clima e perigos naturais, abrir caminho.', 'voltar ao caminho certo depois de se perder'],
+      ['Enigma', 'Deduzir ligando informações soltas, resolver charadas e falar sem revelar tudo.', 'decifrar uma charada sem entregar sua identidade'],
+      ['História', 'Conhecimento e tradição: terras distantes, genealogias e lendas antigas.', 'reconhecer um símbolo de um reino antigo'] ] },
+};
+
+// ---------- Posturas e Tarefas de Combate ----------
+const POSTURAS = [
+  { id: 'van', nome: 'Vanguarda', tipo: 'corpo a corpo', mod: 1, efeito: 'Seus ataques ganham (1d). Ataques corpo a corpo contra você também ganham (1d).',
+    tarefa: { nome: 'Intimidar Inimigo', per: 'Fascínio', atr: 'forca', texto: 'Sucesso: oponentes de Poder 1 ficam Exaustos na rodada; com 1 ícone ✦ também os de Poder 2; com 2 ou mais, todos.' } },
+  { id: 'aberta', nome: 'Aberta', tipo: 'corpo a corpo', mod: 0, efeito: 'Sem vantagem nem desvantagem.',
+    tarefa: { nome: 'Inspirar Camaradas', per: 'Indução', atr: 'coracao', texto: 'Sucesso: quem está na Vanguarda ganha (1d) no ataque da rodada seguinte; 1 ícone ✦ inclui a Aberta; 2 ou mais, todos em corpo a corpo. Um herói por rodada.' } },
+  { id: 'def', nome: 'Defensiva', tipo: 'corpo a corpo', mod: -1, efeito: 'Ataques corpo a corpo contra você perdem (1d). Seus ataques perdem (1d) para cada oponente que o enfrentar.',
+    tarefa: { nome: 'Proteger Companheiro', per: 'Atletismo', atr: 'forca', texto: 'Sucesso: o próximo ataque contra o herói protegido perde (1d), mais (1d) por ícone ✦.' } },
+  { id: 'retag', nome: 'Retaguarda', tipo: 'à distância', mod: 0, efeito: 'Só ataca com armas à distância e só pode ser alvo de ataques à distância.',
+    tarefa: { nome: 'Preparar Tiro', per: 'Busca', atr: 'astucia', texto: 'Sucesso: seu próximo ataque à distância ganha (1d), mais (1d) por ícone ✦.' } },
+];
+const REGRAS_COMBATE = [
+  'Sequência do combate: 1) Saraivadas de Abertura; 2) Rodadas de Enfrentamento, cada uma com Posição, Engajamento e Resolução das ações (da Vanguarda à Retaguarda).',
+  'Cada rodada: uma ação principal (ataque ou Tarefa de Combate) e uma secundária, antes ou depois. Os Heróis agem primeiro.',
+  'Retaguarda: só se os inimigos não passarem do dobro dos aventureiros, e cada herói na Retaguarda exige dois lutando corpo a corpo.',
+  'Engajamento: um herói enfrenta até 3 criaturas humanas (ou 2 grandes); até 3 heróis contra um oponente humano (5 contra um grande).',
+  'Emboscar inimigos: todos da Companhia passam em FURTIVIDADE e os surpreendidos perdem (1d) em todos os testes da 1ª rodada.',
+  'Batalha (ação principal): com sucesso, ganha vantagem no próximo ataque, remove uma complicação ou impõe uma a quem o ataca; +1 herói por ícone ✦. Vantagem: ganha (1d) ou (2d). Complicação: perde (1d) ou (2d).',
+];
