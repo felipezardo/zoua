@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ficha de personagem – O Um Anel 2e</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="barra">
+  <button id="voltar" type="button" class="ghost" hidden>&larr; Fichas</button>
+  <strong id="titulo-barra">O Um Anel – Fichas</strong>
+  <span id="status" role="status"></span>
+  <div class="abas" id="abas" hidden><button type="button" data-aba="ficha" class="on">Ficha</button><button type="button" data-aba="jornada">Jornada</button></div>
+  <details class="menu" id="menu" hidden>
+    <summary>Menu</summary>
+    <div class="menu-itens">
+      <button type="button" id="abrir-rol">Rolagem de dados</button>
+      <button type="button" id="abrir-sombra">Sombra e Esperança</button>
+      <button type="button" id="m-retrato">Retrato</button>
+      <button type="button" id="exportar">Exportar JSON</button>
+      <button type="button" onclick="print()">Imprimir</button>
+      <button type="button" id="novo">Limpar esta ficha</button>
+    </div>
+  </details>
+</nav>
+
+<section id="hub" class="hub">
+  <h2>Suas fichas</h2>
+  <p class="nota">As fichas ficam guardadas neste navegador. Use Exportar para guardar uma cópia ou levar para outro aparelho.</p>
+  <div class="hub-acoes"><button type="button" id="hub-novo">Nova ficha</button><label class="btn">Importar JSON<input type="file" id="importar" accept=".json" hidden></label></div>
+  <div id="hub-lista" class="hub-grade"></div>
+</section>
+
+
+<main class="ficha" id="vista-ficha" hidden>
+
+  <header class="topo">
+    <label class="nome">Nome<input data-k="nome" autocomplete="off"></label>
+  </header>
+
+  <div class="principal">
+    <section class="info">
+      <label class="campo">Cultura Heróica<select id="cultura" data-k="cultura"></select></label>
+      <label class="campo">Idade<input data-k="idade"></label>
+      <div class="campo">Características Notáveis<span class="duplo"><select data-k="trait1" id="trait1" aria-label="Característica Notável 1"></select><select data-k="trait2" id="trait2" aria-label="Característica Notável 2"></select></span><output id="trait-chamado" class="saida"></output></div>
+      <label class="campo">Bênção Cultural<output id="bencao-nome" class="saida">–</output></label>
+      <label class="campo">Padrão de Vida<select data-k="padrao" id="padrao"></select></label>
+      <label class="campo">Falhas<input data-k="falhas"></label>
+      <div class="campo">Chamado<span class="duplo"><output id="chamado-nome" class="saida">–</output><button type="button" id="abrir-chamado">Escolher</button></span></div>
+      <label class="campo">Patrono<input data-k="patrono"></label>
+      <label class="campo">Caminho das Sombras<output id="caminho-nome" class="saida">–</output></label>
+      <label class="campo tesouro">Tesouro<input type="number" min="0" data-k="tesouro"></label>
+    </section>
+
+    <section class="criacao" id="criacao">
+      <div class="progresso"><strong id="progresso"></strong><ol id="checklist" class="checklist"></ol><button type="button" id="abrir-exp">Experiência Anterior (10 pontos)</button><button type="button" id="proximo">Próximo passo</button></div>
+      <div class="bencao"><p id="bencao-desc"></p><p id="traco-desc"></p><p id="notaveis-desc"></p><p id="chamado-info"></p></div>
+      <label class="campo">Conjunto de Atributos<span class="duplo"><select data-k="conjunto" id="conjunto"></select><button type="button" id="sortear" title="Rolar um Dado de Sucesso">d6</button></span></label>
+      <label class="campo" id="bonus-box" hidden>+1 em um Atributo<select data-k="bonus_attr" id="bonus-attr"><option value="">Escolher</option><option value="forca">Força</option><option value="coracao">Coração</option><option value="astucia">Astúcia</option></select></label>
+      <label class="campo">Proficiência principal (nível 2)<select data-k="prof_a" id="prof_a"></select></label>
+      <label class="campo">Proficiência secundária (nível 1)<select data-k="prof_b" id="prof_b"></select></label>
+      <label class="campo">Perícia Favorecida<select data-k="fav_escolha" id="fav_escolha"></select></label>
+    </section>
+
+    <section id="colunas" class="colunas"></section>
+
+    <section class="equip">
+      <h3>Equipamento de Guerra</h3>
+      <div class="linha g cab"><span>Arma</span><span>Dano</span><span>Ferimento</span><span>Carga</span><span>Mãos</span><span>Anotações</span><span></span></div>
+      <div id="guerra"></div>
+      <p id="aviso-maos" class="nota falha-txt" role="status"></p>
+      <div class="linha a cab"><span></span><span>Item</span><span>Proteção / Bloqueio</span><span>Carga</span><span></span></div>
+      <div id="armadura"></div>
+      <p id="nota-carga" class="nota"></p>
+    </section>
+  </div>
+
+  <aside class="lateral">
+    <button type="button" id="retrato" class="retrato" aria-label="Alterar retrato do personagem"><img id="retrato-img" alt="" hidden><span>Retrato<br><small>toque para escolher</small></span></button>
+    <div class="pontos3">
+      <label class="losango"><small>Pontos de Aventura</small><span class="d"><input type="number" min="0" data-k="pa"></span></label>
+      <label class="losango"><small>Pontos de Perícia</small><span class="d"><input type="number" min="0" data-k="pp"></span></label>
+      <label class="losango"><small>Pontos de Sociedade</small><span class="d"><input type="number" min="0" data-k="ps"></span></label>
+    </div>
+
+    <div class="atuais">
+      <div>
+        <h3>Resistência Atual</h3>
+        <label class="losango"><small>Atual</small><span class="d"><input type="number" min="0" data-k="res_atual"></span></label>
+        <label class="losango"><small>Carga</small><span class="d"><output id="carga">0</output></span></label>
+        <label class="losango"><small>Fadiga</small><span class="d"><input type="number" min="0" data-k="fadiga"></span></label>
+      </div>
+      <div>
+        <h3>Esperança Atual</h3>
+        <label class="losango"><small>Atual</small><span class="d"><input type="number" min="0" data-k="esp_atual"></span></label>
+        <label class="losango"><small>Sombra</small><span class="d"><input type="number" min="0" data-k="sombra"></span></label>
+        <label class="losango"><small>Cicatrizes de Sombra</small><span class="d"><input type="number" min="0" data-k="cicatrizes"></span></label>
+      </div>
+    </div>
+
+    <h3>Condições</h3>
+    <label class="cond"><input type="checkbox" data-k="exausto"> Exausto</label>
+    <label class="cond"><input type="checkbox" data-k="arrasado"> Arrasado</label>
+    <label class="cond"><input type="checkbox" data-k="ferido"> Ferido</label>
+    <label class="campo">Ferimento<input data-k="ferimento"></label>
+    <p class="nota">Exausto e Arrasado são marcados automaticamente a partir dos valores acima. Você pode desmarcar à mão.</p>
+
+    <h3>Equipamento de Viagem</h3>
+    <textarea data-k="equip_viagem" rows="8" aria-label="Equipamento de Viagem"></textarea>
+  </aside>
+</main>
+<main class="ficha jornada" id="vista-jornada" hidden></main>
+<dialog id="dlg-confirma" aria-labelledby="confirma-t">
+  <h3 id="confirma-t">Apagar a ficha atual?</h3>
+  <p id="confirma-msg">Exporte antes se quiser guardá-la.</p>
+  <div class="dlg-botoes"><button type="button" id="confirma-sim">Apagar</button><button type="button" id="confirma-nao">Cancelar</button></div>
+</dialog>
+<dialog id="dlg-exp" aria-labelledby="exp-t">
+  <h3 id="exp-t">Experiência Anterior</h3>
+  <p class="exp-barra">Restam <strong id="exp-saldo">10</strong> de 10 pontos</p>
+  <p class="nota">Você tem 10 pontos para aumentar Perícias (níveis 1, 2, 3 e 4 custam 1, 2, 3 e 5) e Proficiências de Combate (níveis 1, 2 e 3 custam 2, 4 e 6). O botão mostra o custo do próximo nível.</p>
+  <div id="exp-lista"></div>
+  <div class="dlg-botoes"><button type="button" id="exp-ok">Confirmar</button><button type="button" id="exp-zerar">Zerar</button><button type="button" id="exp-cancelar">Cancelar</button></div>
+</dialog>
+<dialog id="dlg-chamado" aria-labelledby="dlg-titulo">
+  <h3 id="dlg-titulo">Escolha seu Chamado</h3>
+  <div id="dlg-lista"></div>
+  <p id="dlg-erro" class="erro" role="alert"></p>
+  <div class="dlg-botoes"><button type="button" id="dlg-ok">Confirmar</button><button type="button" id="dlg-cancelar">Cancelar</button></div>
+</dialog>
+<aside id="rolagem" class="rolagem" aria-label="Rolagem de dados">
+  <div class="r-topo"><h3>Rolagem</h3><button type="button" id="r-min" aria-label="Minimizar painel">–</button><button type="button" id="r-fechar" aria-label="Fechar painel">×</button></div>
+  <p id="r-alvo" class="nota">Clique no nome de uma Perícia, Proficiência, Valor ou Sabedoria.</p>
+  <div class="r-grade">
+    <label>Dados de Sucesso<input type="number" min="0" id="r-dados"></label>
+    <label>NA<input type="number" id="r-na"></label>
+    <label>Bloqueio do inimigo<input type="number" id="r-mod" value="0"></label>
+    <label>Dados extras (±)<input type="number" id="r-extra" value="0"></label>
+    <label>Bônus ao total<input type="number" id="r-bonus" value="0"></label>
+    <label>Modo<select id="r-modo"><option value="n">Normal</option><option value="f">Favorecida</option><option value="d">Desfavorecida</option></select></label>
+    <label class="cond"><input type="checkbox" id="r-insp"> Inspirado <small>(a Esperança dá 2d em vez de 1d)</small></label>
+    <label class="cond"><input type="checkbox" id="r-esp"> Gastar 1 Esperança (+1d)</label>
+  </div>
+  <div id="r-ctx"></div>
+  <p id="r-notas" class="nota"></p>
+  <button type="button" id="r-rolar">Rolar</button>
+  <div id="r-res" role="status"></div>
+  <ol id="r-log" class="nota"></ol>
+</aside>
+<dialog id="dlg-retrato" aria-labelledby="ret-t">
+  <h3 id="ret-t">Retrato do personagem</h3>
+  <label class="campo">Escolher um arquivo de imagem<input type="file" id="ret-arquivo" accept="image/*"></label>
+  <label class="campo">Ou colar o endereço (link) de uma imagem<input id="ret-url" placeholder="https://..."></label>
+  <p class="nota">Arquivos são reduzidos e guardados na ficha. Links dependem da internet e podem ser bloqueados em algumas versões do site.</p>
+  <div class="dlg-botoes"><button type="button" id="ret-usar">Usar link</button><button type="button" id="ret-remover">Remover</button><button type="button" id="ret-fechar">Fechar</button></div>
+</dialog>
+<dialog id="dlg-sombra" aria-labelledby="s-t">
+  <h3 id="s-t">Sombra e Esperança</h3>
+  <p id="s-status" class="exp-barra"></p>
+  <div class="s-linha"><span>Esperança</span><button type="button" data-s="esp-">−</button><button type="button" data-s="esp+">+</button></div>
+  <div class="s-linha"><span>Sombra</span><button type="button" data-s="som-">−</button><button type="button" data-s="som+">+</button></div>
+  <h4>Teste de Sombra</h4>
+  <label class="campo">Fonte da Sombra<select id="s-fonte"><option value="pavor">Pavor (VALOR)</option><option value="ganancia">Ganância (SABEDORIA)</option><option value="feiticaria">Feitiçaria (SABEDORIA)</option><option value="transgressao">Transgressão (SABEDORIA)</option></select></label>
+  <label class="campo">Pontos de Sombra em jogo<input type="number" min="0" id="s-pts" value="1"></label>
+  <label class="cond"><input type="checkbox" id="s-esp"> Gastar 1 Esperança (+1d)</label>
+  <button type="button" id="s-rolar" class="grande">Rolar teste de Sombra</button>
+  <div id="s-res" role="status"></div>
+  <h4>Recuperar e firmar</h4>
+  <div class="s-botoes">
+    <button type="button" data-s="firmar">Firmar Vontade</button>
+    <button type="button" data-s="recup">Recuperação espiritual</button>
+    <button type="button" data-s="yule">Yule (Esperança ao máximo)</button>
+    <button type="button" data-s="rem1">Remover 1 Sombra</button>
+    <button type="button" data-s="rem2">Remover 2</button>
+    <button type="button" data-s="rem3">Remover 3</button>
+  </div>
+  <p id="s-ajuda" class="nota"></p>
+  <div class="dlg-botoes"><button type="button" id="s-fechar">Fechar</button></div>
+</dialog>
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script src="hub.js"></script>
+<script src="sombra.js"></script>
+</body>
+</html>
