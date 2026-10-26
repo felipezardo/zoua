@@ -228,11 +228,6 @@ body[data-vista="hub"] #rolagem{display:none}
 .pon-linha{display:grid;grid-template-columns:2fr 1fr;gap:.3rem;margin-bottom:.3rem}
 .caixas{flex-wrap:wrap}
 .caixas button{width:13px;height:13px;transform:none;margin:1px}
-.mapa svg{width:100%;height:auto;display:block}
-.hex{fill:transparent;stroke:var(--linha);stroke-width:1;cursor:pointer}
-.hex:hover{fill:var(--campo)}
-.hex.marcado{stroke:var(--tinta)}
-.hex-t{fill:var(--tinta);font:700 15px var(--corpo);pointer-events:none}
 .eventos fieldset{border:1px solid var(--linha);margin:0 0 .5rem;padding:.3rem .5rem}
 .eventos legend{font:600 .85rem var(--titulo);color:var(--tinta)}
 @media(max-width:1000px){.jor-cima,.jor-baixo{grid-template-columns:1fr}}
@@ -314,3 +309,23 @@ body[data-vista="ficha"] .marca{display:none}
 .saraivada ul.lista{margin:.2rem 0;padding-left:1.1rem}
 .atacar-sar{padding:.1rem .5rem}
 @media print{.atacar-sar{display:none}}
+
+/* ---------- Mapa de Eriador ---------- */
+.mapa-barra{display:flex;flex-wrap:wrap;gap:.4rem .8rem;justify-content:space-between;margin-bottom:.4rem}
+.mapa-grupo{display:flex;flex-wrap:wrap;gap:.3rem}
+.mapa-barra button{font:600 .85rem var(--titulo);background:transparent;color:var(--tinta);border:1.5px solid var(--tinta);border-radius:999px;padding:.3rem .8rem;cursor:pointer;min-height:2.2rem}
+.mapa-barra button[aria-checked="true"],.mapa-barra button[aria-pressed="true"]{background:var(--tinta);color:var(--sobre-tinta)}
+.mapa-barra button:hover{background:#b3322c22}
+.mapa-barra button:focus-visible,#mapa-canvas:focus-visible{outline:2px solid var(--tinta);outline-offset:2px}
+.mapa-area{position:relative;height:clamp(22rem,70vh,42rem);border:3px double var(--tinta);background:#d9cbab;overflow:hidden}
+#mapa-canvas{display:block;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+#mapa-canvas.arrastando{cursor:grabbing}
+.mapa-aviso{position:absolute;inset:auto 0 0 0;padding:.4rem .7rem;background:var(--barra);color:var(--barra-t);font-size:.85rem;text-align:center}
+@media print{.mapa-barra{display:none}}
+.jor-baixo>section{min-width:0}
+.mapa-area{min-width:0}
+#mapa-canvas{position:absolute;left:0;top:0}
+
+.mapa-barra button[aria-checked="true"]:hover,.mapa-barra button[aria-pressed="true"]:hover{background:var(--tinta);color:var(--sobre-tinta)}
+.comp-linha .pontos.caixas{display:flex;flex-wrap:nowrap;gap:2px}
+.comp-linha .pontos.caixas button{width:.8rem;height:.8rem;min-width:0;margin:0}

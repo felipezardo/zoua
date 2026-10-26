@@ -109,7 +109,6 @@ $('#ret-arquivo').onchange = (e) => {
 // ---------- Jornada (página 2 da ficha) ----------
 const caixas = (k, n) => `<span class="pontos caixas" data-k="${k}">` + Array.from({ length: n }, (_, i) => `<button type="button" data-v="${i + 1}" aria-label="Fadiga ${i + 1}"></button>`).join('') + '</span>';
 const campo = (rot, k, extra = '') => `<label class="campo">${rot}<input data-k="${k}" ${extra}></label>`;
-const MAPA = { colunas: 14, linhas: 10, r: 17 };
 function montarJornada() {
   const L7 = [0, 1, 2, 3, 4, 5, 6];
   $('#vista-jornada').innerHTML = `
@@ -124,35 +123,12 @@ function montarJornada() {
     <section><h3>Diário</h3><textarea data-k="diario" rows="10" aria-label="Diário"></textarea></section>
   </div>
   <div class="jor-baixo">
-    <section class="mapa-box"><h3>Caminho da Jornada</h3>
-      <p class="nota">Toque num hexágono para marcar: ● percurso, ✕ perigo, ⌂ abrigo; toque de novo para trocar ou limpar.</p>
-      <div id="mapa" class="mapa"></div><button type="button" id="mapa-limpar" class="mini">Limpar mapa</button></section>
+    <section class="mapa-box"><h3>Caminho da Jornada</h3><div id="mapa-app"></div></section>
     <section class="eventos"><h3>Eventos</h3>
       ${[1,2,3,4,5,6].map(n => `<fieldset><legend>Evento ${n}</legend>${campo('Alvo', 'e' + n + '_alvo')}${campo('Evento', 'e' + n + '_evento')}${campo('Resultado', 'e' + n + '_res')}</fieldset>`).join('')}</section>
   </div>`;
 }
-const MARCAS = ['', '●', '✕', '⌂'];
-function renderMapa() {
-  const { colunas: C, linhas: R, r } = MAPA, w = Math.sqrt(3) * r, m = state.mapa || {};
-  let svg = `<svg viewBox="0 0 ${C * w + w / 2 + 4} ${R * 1.5 * r + r / 2 + 4}" role="group" aria-label="Mapa de hexágonos">`;
-  for (let y = 0; y < R; y++) for (let x = 0; x < C; x++) {
-    const cx = 2 + w / 2 + x * w + (y % 2 ? w / 2 : 0), cy = 2 + r + y * 1.5 * r;
-    const pts = [0, 1, 2, 3, 4, 5].map(i => { const a = Math.PI / 180 * (60 * i - 30); return (cx + r * Math.cos(a)).toFixed(1) + ',' + (cy + r * Math.sin(a)).toFixed(1); }).join(' ');
-    const v = m[x + '_' + y] || 0;
-    svg += `<polygon data-h="${x}_${y}" points="${pts}" class="hex${v ? ' marcado' : ''}"/>` + (v ? `<text x="${cx}" y="${cy + 5}" text-anchor="middle" class="hex-t">${MARCAS[v]}</text>` : '');
-  }
-  $('#mapa').innerHTML = svg + '</svg>';
-}
-montarJornada(); renderMapa();
-$('#vista-jornada').addEventListener('click', (e) => {
-  const h = e.target.closest('[data-h]'); if (!h) return;
-  state.mapa = state.mapa || {}; const k = h.dataset.h, v = ((state.mapa[k] || 0) + 1) % MARCAS.length;
-  if (v) state.mapa[k] = v; else delete state.mapa[k];
-  renderMapa(); salvar();
-});
-$('#mapa-limpar').onclick = () => confirmar('Limpar o mapa?', 'Todas as marcas do Caminho da Jornada serão removidas.', () => { delete state.mapa; renderMapa(); salvar(); }, 'Limpar');
-const aplicarOriginal = aplicar;
-aplicar = function (i) { aplicarOriginal(i); renderMapa(); };
+montarJornada();
 
 renderHub(); mostrar('hub'); aplicar(true);
 
