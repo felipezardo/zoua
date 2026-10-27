@@ -337,3 +337,86 @@ body[data-vista="ficha"] .marca{display:none}
 .mapa-olho .o-aberto,.mapa-olho[aria-pressed="true"] .o-fechado{display:none}
 .mapa-olho[aria-pressed="true"] .o-aberto{display:inline}
 @media print{.mapa-olho{display:none}}
+
+/* ---------- Resultado das rolagens e histórico ---------- */
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.res-card{margin-top:.6rem;padding:.6rem .7rem;border:1.5px solid var(--linha);border-left:5px solid var(--tinta);border-radius:6px;background:var(--campo)}
+.res-ok{border-left-color:var(--ok)}
+.res-topo{display:flex;align-items:center;justify-content:space-between;gap:.2rem .6rem;flex-wrap:wrap}
+.veredito{display:flex;align-items:center;gap:.45rem;font:700 1.05rem var(--titulo)}
+.res-ok .veredito{color:var(--ok)}.res-falha .veredito{color:var(--tinta)}
+.v-marca{display:inline-flex;align-items:center;gap:2px;min-width:1.2rem;justify-content:center;font-size:1.2rem}
+.res-nome{font-size:.8rem;opacity:.85}
+.bandeja{display:flex;flex-wrap:wrap;gap:.5rem 1.1rem;margin:.55rem 0 .4rem}
+.grupo small{display:block;font:600 .68rem var(--corpo);text-transform:uppercase;letter-spacing:.07em;opacity:.7}
+.dados{display:flex;flex-wrap:wrap;gap:6px;margin-top:.25rem;align-items:center}
+.vazio{font-size:.8rem;opacity:.6;font-style:italic}
+.dado{display:inline-grid;place-items:center;min-width:2.5rem;height:2.5rem;padding:0 .2rem;background:#f8f1e0;color:#2a1c14;border:2px solid #5b4a35;font:700 1.15rem var(--titulo);box-shadow:0 2px 0 #0003;animation:tombar .6s cubic-bezier(.2,.8,.3,1) both;animation-delay:calc(var(--i,0)*80ms)}
+.dado-f{border-radius:50%;border-color:var(--tinta);min-width:2.9rem;height:2.9rem}
+.dado-s{border-radius:8px}
+.dado.usado{outline:3px solid var(--tinta);outline-offset:2px}
+.dado.descartado{opacity:.38;filter:grayscale(.7)}
+.dado.zero>span{opacity:.4;text-decoration:line-through}
+.dado.seis{background:#fcefe8}
+.dado.runa{background:#fbf3d0}
+.dado.olho{background:#f1d8d1}
+.ico{display:block;max-width:none;user-select:none}
+.ico-suc{height:1.55rem;width:auto}
+.ico-runa{height:1.9rem;width:auto}
+.ico-olho{width:2.2rem;height:auto}
+.v-marca .ico-suc{height:1.35rem}
+.conta{display:flex;align-items:baseline;flex-wrap:wrap;gap:.2rem .55rem;font-family:var(--titulo)}
+.t-total{font-size:2.1rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.res-ok .t-total{color:var(--ok)}.res-falha .t-total{color:var(--tinta)}
+.vs{font-size:1.4rem;opacity:.7}
+.t-na{font-size:1.25rem}
+.t-na small{font:600 .68rem var(--corpo);opacity:.7;text-transform:uppercase;letter-spacing:.07em}
+.auto{font:600 .95rem var(--corpo);font-style:italic}
+.soma{margin:.15rem 0 0;font-size:.8rem;opacity:.8}
+.chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.45rem}
+.chip{display:inline-flex;align-items:center;gap:.25rem;padding:.12rem .6rem;border:1px solid var(--linha);border-radius:999px;background:var(--papel);font-size:.78rem}
+.chip.forte{border-color:var(--tinta);font-weight:600}
+.chip.alerta{background:var(--tinta);border-color:var(--tinta);color:var(--sobre-tinta);font-weight:700}
+.chip .ico-suc{height:.95rem;display:inline-block}
+.r-extra{margin-top:.55rem;padding-top:.4rem;border-top:1px dashed var(--linha)}
+.r-extra .chips{margin-top:0}
+.r-extra details{margin-top:.4rem;font-size:.82rem}
+.r-extra ul{margin:.25rem 0 0;padding-left:1.1rem}
+.r-extra li .ico-suc{display:inline-block;height:.9rem;vertical-align:-2px}
+.sombra-res{margin:.5rem 0 0;font-size:.9rem;padding-top:.4rem;border-top:1px dashed var(--linha)}
+/* animações */
+@keyframes tombar{0%{transform:translateY(-20px) rotate(-240deg) scale(.5);opacity:0}65%{transform:translateY(3px) rotate(14deg) scale(1.1);opacity:1}100%{transform:none;opacity:1}}
+@keyframes surgir{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes tremer{20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+@keyframes pulsar{50%{transform:scale(1.07)}}
+@keyframes brilho{0%{box-shadow:0 0 0 0 #e8c65add,0 2px 0 #0003}70%{box-shadow:0 0 0 14px #e8c65a00,0 2px 0 #0003}100%{box-shadow:0 2px 0 #0003}}
+@keyframes sombrear{0%{box-shadow:0 0 0 0 #b3322cdd,0 2px 0 #0003}70%{box-shadow:0 0 0 14px #b3322c00,0 2px 0 #0003}100%{box-shadow:0 2px 0 #0003}}
+.res-card.nova{animation:surgir .35s ease-out}
+.res-ok.nova .veredito{display:flex;transform-origin:left center;animation:pulsar .6s .55s}
+.res-falha.nova .veredito{animation:tremer .5s .55s}
+.res-runa .dado.runa{animation:tombar .6s cubic-bezier(.2,.8,.3,1) both,brilho 1.4s ease-out;animation-delay:calc(var(--i,0)*80ms),.8s}
+.res-olho .dado.olho:not(.descartado){animation:tombar .6s cubic-bezier(.2,.8,.3,1) both,sombrear 1.4s ease-out;animation-delay:calc(var(--i,0)*80ms),.8s}
+@media (prefers-reduced-motion:reduce){.dado,.res-card,.veredito{animation:none!important}}
+/* histórico */
+.r-hist{margin-top:.8rem;padding-top:.4rem;border-top:2px solid var(--tinta)}
+.r-hist-topo{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.r-hist h4{margin:0;font:700 .9rem var(--titulo);color:var(--tinta)}
+.r-hist .link-btn{display:inline;margin:0}
+.r-log{list-style:none;margin:.3rem 0 0;padding:0;max-height:11rem;overflow:auto}
+.r-log li{border-bottom:1px solid var(--linha)}
+.r-log summary{display:grid;grid-template-columns:1.2rem 1fr auto;gap:.4rem;align-items:center;padding:.3rem 0;cursor:pointer;list-style:none;font-size:.85rem}
+.r-log summary::-webkit-details-marker{display:none}
+.r-log summary:focus-visible{outline:2px solid var(--tinta);outline-offset:1px}
+.h-marca{font-weight:700;text-align:center}
+.h-ok .h-marca{color:var(--ok)}.h-falha .h-marca{color:var(--tinta)}
+.h-nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.h-res{font-variant-numeric:tabular-nums;opacity:.85}
+.h-det{padding:.1rem 0 .5rem 1.6rem;font-size:.8rem}
+.h-det time{opacity:.7;margin-left:.4rem}
+.bandeja.mini{margin:.3rem 0 0}
+.bandeja.mini .dado{min-width:1.8rem;height:1.8rem;font-size:.8rem;animation:none;box-shadow:none;border-width:1.5px}
+.bandeja.mini .dado-f{min-width:2rem;height:2rem}
+.bandeja.mini .ico-suc{height:1rem}.bandeja.mini .ico-runa{height:1.2rem}.bandeja.mini .ico-olho{width:1.45rem}
+@media print{.rolagem{display:none}}
+#r-rolar{display:block;width:100%;margin:.5rem 0 0;padding:.6rem 1rem;font:700 1.05rem var(--titulo);letter-spacing:.06em;border-radius:6px}
+#r-rolar:active{transform:translateY(1px)}

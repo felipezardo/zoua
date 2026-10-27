@@ -411,7 +411,7 @@ function preparar(nome, atr, dados, chave, tipo = 'pericia', arma = null) {
   $('#r-insp').checked = ef.insp.length > 0; $('#r-esp').checked = false; $('#r-bonus').value = ef.bonus;
   $('#r-notas').innerHTML = [...ef.fav.map(x => x + ': Favorecida.'), ...ef.insp.map(x => x + ': Inspirado.'), ...ef.notas].join('<br>');
   $('#r-ctx').innerHTML = ef.ctx.map(c => `<label class="cond"><input type="checkbox" data-ef="${c.ef}" data-sombra="${c.sombra || 0}" data-elb="${c.elb || 0}"> ${c.rot}</label>`).join('');
-  $('#r-res').textContent = ''; rolCtx.ult = null; atualizarPrem(); abrirPainel(true);
+  $('#r-res').innerHTML = ''; rolCtx.ult = null; atualizarPrem(); abrirPainel(true);
 }
 document.addEventListener('click', (e) => {
   const at = e.target.closest('.atacar, .atacar-sar');
@@ -478,23 +478,33 @@ $('#r-rolar').onclick = () => {
   const total = (olho ? 0 : fac) + soma + (parseInt($('#r-bonus').value) || 0);
   const ok = runa || magico || (!(arrasado && olho) && total >= na);
   const grau = magico ? 'Sucesso Mágico' : !ok ? 'Falha' : icones >= 2 ? 'Sucesso extraordinário' : icones === 1 ? 'Grande sucesso' : 'Sucesso';
-  const fmt = (v) => v === 11 ? 'Runa' : v === 12 ? 'Olho' : v;
-  const txt = `${$('#r-alvo').textContent}: ${grau}. Façanha ${f.map(fmt).join('/')}${modo !== 'n' ? ' (' + fmt(fac) + ')' : ''} + Sucesso [${suc.map(v => v === 6 ? '6✦' : v).join(', ')}] = ${runa ? 'automático' : total} contra NA ${na}${exausto ? ' | Exausto' : ''}${arrasado ? ' | Arrasado' : ''}`;
-  $('#r-res').innerHTML = `<strong class="${ok ? 'ok' : 'falha'}">${grau}</strong>${insp && !gastou ? '<br><em>Inspirado só tem efeito ao gastar Esperança.</em>' : ''}<br>${txt.split(': ').slice(1).join(': ').replace(/^[^.]+\. /, '')}`;
-  let extra = '';
+  // monta o que será mostrado (a exibição fica em rolagem.js)
+  const espDados = gastou && !magico ? (insp ? 2 : 1) : 0, bonus = parseInt($('#r-bonus').value) || 0;
+  const chips = [];
+  if (re) chips.push('Premonição: dados refeitos');
+  if (modo === 'f') chips.push('Favorecida'); else if (modo === 'd') chips.push('Desfavorecida');
+  if (espDados) chips.push(`Esperança +${espDados}d${insp ? ' (Inspirado)' : ''}`);
+  if (magico) chips.push('Sucesso Mágico (1 Esperança)');
+  if (exausto) chips.push('Exausto'); if (arrasado) chips.push('Arrasado');
+  if (bonus) chips.push(`Bônus ${bonus > 0 ? '+' : '−'}${Math.abs(bonus)}`);
+  let extra = null;
   if (rolCtx.tipo === 'ataque' && ok && rolCtx.arma) {
-    const a = rolCtx.arma, mi = tem('maos'), pesado = (num('forca_nivel') || 0) + (mi ? 1 : 0) + (a.duas ? 1 : 0);
+    const a = rolCtx.arma, mi = tem('maos'), pesado = (num('forca_nivel') || 0) + (mi ? 1 : 0) + (a.duas ? 1 : 0), IC = icoSucesso();
     const maos = a.duas ? ' (já inclui +1 por usar duas mãos)' : a.m === 12 ? ' (+1 se empunhar com duas mãos)' : '';
     const perf = !olho && a.n !== 'Desarmado' && (runa || fac >= (a.afiada ? 9 : 10));
-    extra = `<br>Perda de Resistência do alvo: <strong>${a.d}</strong>. Cada ícone ✦ pode ser um Golpe Pesado: +${pesado}${maos}.` +
-      ` <em>Outras opções por ícone:${a.p !== 'Arcos' ? ` Defender (Bloqueio +${a.p === 'Lanças' ? 3 : a.p === 'Espadas' ? 2 : 1} na rodada);` : ''}${itemDefesa('escudo', ESCUDOS) ? ' Pancada de Escudo (se sua FORÇA superar o Nível de Atributo do alvo, ele perde 1d na rodada);' : ''}</em>` +
-      (mi ? ' Mãos Inclementes: já somei +1 ao Golpe Pesado; ao usar Perfurar, some +1 ao resultado do Dado de Façanha.' : '') +
-      (!perf && icones >= 1 && !olho && a.n !== 'Desarmado' && (['Arcos', 'Lanças', 'Espadas'].includes(a.p) || a.n === 'Adaga') ? ' <em>Opção: gaste 1 ícone em Perfurar para elevar o resultado do Dado de Façanha (até 10) e causar Golpe Perfurante.</em>' : '') +
-      (perf ? ` <strong class="falha">Golpe Perfurante!</strong> O alvo joga PROTEÇÃO contra Ferimento ${a.f}.` : '');
+    const ch = [{ html: `Perda de Resistência: <b>${a.d}</b>` }];
+    if (icones) ch.push({ html: `${icones} ${IC}: Golpe Pesado +${pesado} por ícone${maos}` });
+    if (perf) ch.push({ alerta: true, html: `Golpe Perfurante! PROTEÇÃO contra Ferimento <b>${a.f}</b>` });
+    const det = [];
+    if (a.p !== 'Arcos') det.push(`Defender: Bloqueio +${a.p === 'Lanças' ? 3 : a.p === 'Espadas' ? 2 : 1} na rodada.`);
+    if (itemDefesa('escudo', ESCUDOS)) det.push('Pancada de Escudo: se sua FORÇA superar o Nível de Atributo do alvo, ele perde 1d na rodada.');
+    if (mi) det.push('Mãos Inclementes: o +1 já está no Golpe Pesado; ao usar Perfurar, some +1 ao Dado de Façanha.');
+    if (!perf && icones >= 1 && !olho && a.n !== 'Desarmado' && (['Arcos', 'Lanças', 'Espadas'].includes(a.p) || a.n === 'Adaga')) det.push(`Perfurar: gaste 1 ${IC} para elevar o Dado de Façanha (até 10) e causar Golpe Perfurante.`);
+    extra = { chips: ch, det };
   }
-  $('#r-res').innerHTML += extra;
+  mostrarRolagem({ nome: $('#r-alvo').textContent.replace(/ \(Favorecida\)$/, ''), grau, ok, magico, na, total, bonus, f, fac, modo, suc, exausto, arrasado, runa, olho, icones, chips, extra,
+    nota: insp && !gastou ? 'Inspirado só tem efeito ao gastar Esperança.' : '' });
   $('#r-esp').checked = false;
-  const li = document.createElement('li'); li.textContent = txt; $('#r-log').prepend(li); while ($('#r-log').children.length > 6) $('#r-log').lastChild.remove();
   aplicar(); salvar();
 };
 

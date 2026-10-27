@@ -156,7 +156,11 @@
   <p id="r-notas" class="nota"></p>
   <button type="button" id="r-rolar">Rolar</button>
   <div id="r-res" role="status"></div>
-  <ol id="r-log" class="nota"></ol>
+  <div id="r-hist" class="r-hist" hidden>
+    <div class="r-hist-topo"><h4>Histórico <span id="r-hist-n"></span></h4><button type="button" id="r-limpar" class="link-btn">Limpar histórico</button></div>
+    <p id="r-hist-msg" class="nota" hidden>Histórico limpo. <button type="button" id="r-desfazer" class="link-btn">Desfazer</button></p>
+    <ol id="r-log" class="r-log"></ol>
+  </div>
 </aside>
 <dialog id="dlg-retrato" aria-labelledby="ret-t">
   <h3 id="ret-t">Retrato do personagem</h3>
@@ -193,5 +197,6 @@
 <script src="hub.js"></script>
 <script src="mapa.js"></script>
 <script src="sombra.js"></script>
+<script src="rolagem.js"></script>
 </body>
 </html>

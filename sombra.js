@@ -53,10 +53,9 @@ $('#s-rolar').onclick = () => {
   const novo = lim((num('sombra') || 0) + recebe, 0, me);
   state.sombra = String(novo);
   aplicar(true); salvar(); statusSombra();
-  const fmt = (v) => (v === 11 ? 'Runa' : v === 12 ? 'Olho' : v);
-  $('#s-res').innerHTML = `<strong class="${ok ? 'ok' : 'falha'}">${ok ? 'Teste bem-sucedido' : 'Teste falhou'}</strong> (${nome}, NA ${na})<br>
-    Façanha ${r.f.map(fmt).join('/')}${modo !== 'n' ? ' (' + fmt(r.fac) + ')' : ''} + Sucesso [${r.suc.map(v => (v === 6 ? '6✦' : v)).join(', ')}] = ${r.runa ? 'automático' : total}${exausto ? ' | Exausto' : ''}${arrasado ? ' | Arrasado' : ''}<br>
-    Sombra em jogo: ${pts}. Reduzida em ${reduz}. <strong>Você ganha ${recebe} ponto${recebe === 1 ? '' : 's'} de Sombra</strong> (agora ${novo}).${notas.length ? '<br><em>' + notas.join('; ') + '</em>' : ''}`;
+  const chips = [...notas]; if (exausto) chips.push('Exausto'); if (arrasado) chips.push('Arrasado');
+  mostrarRolagem({ nome: `Teste de Sombra: ${nome}`, grau: ok ? 'Teste bem-sucedido' : 'Teste falhou', ok, na, total, bonus: 0, f: r.f, fac: r.fac, modo, suc: r.suc, exausto, arrasado, runa: r.runa, olho: r.olho, icones: r.icones, chips,
+    extraHtml: `<p class="sombra-res">Sombra em jogo: ${pts}. Reduzida em ${reduz}.<br><strong>Você ganha ${recebe} ponto${recebe === 1 ? '' : 's'} de Sombra</strong> (agora ${novo}).</p>` }, '#s-res');
 };
 
 $('#dlg-sombra').addEventListener('click', (e) => {
