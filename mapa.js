@@ -3,7 +3,8 @@
 // abaixo estão em pixels da imagem ORIGINAL (5112 x 3304), então o arquivo pode ser trocado por
 // uma versão menor ou maior da mesma imagem sem desalinhar nada.
 (() => {
-  const MAPA_SRC = 'assets/eriador.webp';
+  const MAPA_SRC = 'assets/eriador.webp';                        // mapa dos jogadores (padrão)
+  const MAPA_HIST_SRC = 'assets/eriador-historiador.webp';       // mapa do Historiador (mesma malha e mesmas dimensões)
   const IMG_W = 5112, IMG_H = 3304;
   const G = { w: 87.444, R: 50.436, h: 76.151, ox: 102.406, oy: 17.062 }; // hexágonos "pointy-top", linhas ímpares deslocadas
   const MARCAS = { 1: { nome: 'Percurso', glifo: '●', cor: '179,50,44' }, 2: { nome: 'Perigo', glifo: '✕', cor: '40,28,20' }, 3: { nome: 'Abrigo', glifo: '⌂', cor: '44,107,47' } };
@@ -42,6 +43,12 @@
       </div>
     </div>
     <div class="mapa-area" id="mapa-area">
+      <button type="button" id="mapa-olho" class="mapa-olho" aria-pressed="false" aria-label="Mostrar o mapa do Historiador" title="Mapa do Historiador">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <g class="o-aberto"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></g>
+          <g class="o-fechado"><path d="M2.5 11.5C4.6 15 8 17 12 17s7.4-2 9.5-5.5"/><path d="M5 14.8 3.4 16.8M9.2 16.6 8.4 19M14.8 16.6l.8 2.4M19 14.8l1.6 2"/></g>
+        </svg>
+      </button>
       <canvas id="mapa-canvas" tabindex="0" role="img" aria-label="Mapa de Eriador com hexágonos. Arraste para mover, use dois dedos ou os botões para o zoom, e toque num hexágono para marcar. Setas movem o mapa; mais e menos dão zoom."></canvas>
       <div class="mapa-aviso" id="mapa-aviso">Carregando o mapa…</div>
     </div>
@@ -50,10 +57,25 @@
 
   const area = document.getElementById('mapa-area'), cv = document.getElementById('mapa-canvas'), ctx = cv.getContext('2d');
   let vw = 0, vh = 0, dpr = 1, k = 0.1, tx = 0, ty = 0, iniciado = false, ferr = 1, malha = false, hover = null, sel = null, quadro = 0;
-  const img = new Image(); let imgOk = false;
-  img.onload = () => { imgOk = true; document.getElementById('mapa-aviso').hidden = true; desenhar(); };
-  img.onerror = () => { malha = true; document.getElementById('mapa-malha').setAttribute('aria-pressed', 'true'); const a = document.getElementById('mapa-aviso'); a.hidden = false; a.textContent = 'Imagem do mapa não encontrada (assets/eriador.webp). A malha continua funcionando.'; desenhar(); };
-  img.src = MAPA_SRC;
+  // Dois mapas na mesma malha: 0 = jogadores (padrão), 1 = Historiador (carregado só quando pedido)
+  const aviso = document.getElementById('mapa-aviso'), olho = document.getElementById('mapa-olho');
+  const mapas = [{ src: MAPA_SRC, img: new Image(), ok: false, pedido: false }, { src: MAPA_HIST_SRC, img: new Image(), ok: false, pedido: false }];
+  let modo = 0;
+  function carregar(i) {
+    const m = mapas[i]; if (m.pedido) return; m.pedido = true;
+    m.img.onload = () => { m.ok = true; if (modo === i) aviso.hidden = true; desenhar(); };
+    m.img.onerror = () => { m.pedido = false; if (modo === i) { malha = true; document.getElementById('mapa-malha').setAttribute('aria-pressed', 'true'); aviso.hidden = false; aviso.textContent = `Imagem do mapa não encontrada (${m.src.length > 80 ? 'arquivo embutido' : m.src}). A malha continua funcionando.`; } desenhar(); };
+    m.img.src = m.src;
+  }
+  function trocarMapa(i) {
+    modo = i; carregar(i);
+    olho.setAttribute('aria-pressed', String(i === 1));
+    olho.setAttribute('aria-label', i ? 'Voltar ao mapa dos jogadores' : 'Mostrar o mapa do Historiador');
+    olho.title = i ? 'Mapa dos jogadores' : 'Mapa do Historiador';
+    aviso.textContent = 'Carregando o mapa…'; aviso.hidden = mapas[i].ok;
+    desenhar();
+  }
+  carregar(0);
 
   const kMin = () => Math.min(vw / IMG_W, vh / IMG_H);
   function limitar() {
@@ -83,7 +105,7 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.fillStyle = '#d9cbab'; ctx.fillRect(0, 0, vw, vh);
       ctx.save(); ctx.translate(tx, ty); ctx.scale(k, k);
-      if (imgOk) { ctx.imageSmoothingQuality = 'high'; ctx.drawImage(img, 0, 0, IMG_W, IMG_H); }
+      const mp = mapas[modo]; if (mp.ok) { ctx.imageSmoothingQuality = 'high'; ctx.drawImage(mp.img, 0, 0, IMG_W, IMG_H); }
       if (malha) { // desenha só os hexágonos visíveis
         const x0 = -tx / k, y0 = -ty / k, x1 = (vw - tx) / k, y1 = (vh - ty) / k;
         const r0 = Math.floor((y0 - G.oy) / G.h) - 1, r1 = Math.ceil((y1 - G.oy) / G.h) + 1;
@@ -93,7 +115,9 @@
       const m = marcas();
       for (const key in m) {
         const [c, r] = key.split('_').map(Number), t = MARCAS[m[key]]; if (!t) continue;
-        caminho(c, r); ctx.fillStyle = `rgba(${t.cor},.38)`; ctx.fill(); ctx.lineWidth = 3 / k; ctx.strokeStyle = `rgba(${t.cor},.95)`; ctx.stroke();
+        caminho(c, r); ctx.fillStyle = `rgba(${t.cor},.38)`; ctx.fill();
+        ctx.lineWidth = 6 / k; ctx.strokeStyle = 'rgba(255,250,235,.8)'; ctx.stroke(); // contorno claro: legível sobre o mapa colorido
+        ctx.lineWidth = 3 / k; ctx.strokeStyle = `rgba(${t.cor},.95)`; ctx.stroke();
         const [cx, cy] = centro(c, r); ctx.fillStyle = `rgb(${t.cor})`; ctx.font = `700 ${G.R * 0.95}px Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t.glifo, cx, cy + G.R * 0.05);
       }
       for (const alvo of [hover, sel]) if (alvo) { caminho(...alvo); ctx.lineWidth = 3.5 / k; ctx.strokeStyle = alvo === sel ? '#b3322c' : 'rgba(42,28,20,.8)'; ctx.stroke(); }
@@ -105,7 +129,7 @@
     const pl = (v) => `${v} hexágono${v === 1 ? '' : 's'}`;
     document.getElementById('mapa-contagem').textContent = `Percurso: ${pl(n[1])}. Perigo: ${pl(n[2])}. Abrigo: ${pl(n[3])}.`;
   }
-  window.renderMapa = () => { iniciado = false; ajustarTamanho(); contar(); };
+  window.renderMapa = () => { if (modo !== 0) trocarMapa(0); iniciado = false; ajustarTamanho(); contar(); }; // sempre abre no mapa dos jogadores
   function ajustarTamanho() {
     const r = area.getBoundingClientRect(); if (!r.width || !r.height) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2); vw = Math.round(r.width); vh = Math.round(r.height);
@@ -162,6 +186,7 @@
     const f = e.target.closest('[data-ferr]');
     if (f) { ferr = +f.dataset.ferr; raiz.querySelectorAll('[data-ferr]').forEach(b => b.setAttribute('aria-checked', String(b === f))); return; }
     const id = e.target.closest('button')?.id;
+    if (id === 'mapa-olho') { trocarMapa(modo ? 0 : 1); return; }
     if (id === 'mapa-mais') { zoomEm(vw / 2, vh / 2, k * 1.4); guardarVista(); }
     else if (id === 'mapa-menos') { zoomEm(vw / 2, vh / 2, k / 1.4); guardarVista(); }
     else if (id === 'mapa-ajustar') ajustar();
