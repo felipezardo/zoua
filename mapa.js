@@ -44,10 +44,8 @@
     </div>
     <div class="mapa-area" id="mapa-area">
       <button type="button" id="mapa-olho" class="mapa-olho" aria-pressed="false" aria-label="Mostrar o mapa do Historiador" title="Mapa do Historiador">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-          <g class="o-aberto"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></g>
-          <g class="o-fechado"><path d="M2.5 11.5C4.6 15 8 17 12 17s7.4-2 9.5-5.5"/><path d="M5 14.8 3.4 16.8M9.2 16.6 8.4 19M14.8 16.6l.8 2.4M19 14.8l1.6 2"/></g>
-        </svg>
+        <img class="o-fechado" src="assets/dados/olho-fechado.png" alt="" aria-hidden="true" draggable="false">
+        <img class="o-aberto" src="assets/dados/olho-de-sauron.png" alt="" aria-hidden="true" draggable="false">
       </button>
       <canvas id="mapa-canvas" tabindex="0" role="img" aria-label="Mapa de Eriador com hexágonos. Arraste para mover, use dois dedos ou os botões para o zoom, e toque num hexágono para marcar. Setas movem o mapa; mais e menos dão zoom."></canvas>
       <div class="mapa-aviso" id="mapa-aviso">Carregando o mapa…</div>

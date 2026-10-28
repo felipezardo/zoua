@@ -334,8 +334,9 @@ body[data-vista="ficha"] .marca{display:none}
 .mapa-olho{position:absolute;top:.5rem;right:.5rem;z-index:2;display:grid;place-items:center;width:2.4rem;height:2.4rem;padding:0;border-radius:50%;border:1.5px solid rgba(42,28,20,.5);background:rgba(242,233,212,.6);color:#2a1c14;opacity:.65;cursor:pointer;transition:opacity .15s,background .15s}
 .mapa-olho:hover,.mapa-olho:focus-visible,.mapa-olho[aria-pressed="true"]{opacity:1;background:rgba(242,233,212,.92)}
 .mapa-olho:focus-visible{outline:2px solid var(--tinta);outline-offset:2px}
+.mapa-olho img{display:block;width:1.7rem;height:auto;pointer-events:none;user-select:none}
 .mapa-olho .o-aberto,.mapa-olho[aria-pressed="true"] .o-fechado{display:none}
-.mapa-olho[aria-pressed="true"] .o-aberto{display:inline}
+.mapa-olho[aria-pressed="true"] .o-aberto{display:block}
 @media print{.mapa-olho{display:none}}
 
 /* ---------- Resultado das rolagens e histórico ---------- */
