@@ -137,7 +137,7 @@ renderHub(); mostrar('hub'); aplicar(true);
   const chave = 'um-anel-tema', raiz = document.documentElement, b = $('#tema');
   let atual = 'light';
   try { atual = localStorage.getItem(chave) === 'dark' ? 'dark' : 'light'; } catch {}
-  const pintar = () => { raiz.dataset.theme = atual; b.setAttribute('aria-pressed', String(atual === 'dark')); b.title = atual === 'dark' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'; };
-  b.onclick = () => { atual = atual === 'dark' ? 'light' : 'dark'; pintar(); try { localStorage.setItem(chave, atual); } catch {} };
+  const pintar = () => { raiz.dataset.theme = atual; const t = atual === 'dark' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'; b.setAttribute('aria-pressed', String(atual === 'dark')); b.setAttribute('aria-label', t); b.title = t; };
+  b.onclick = () => { atual = atual === 'dark' ? 'light' : 'dark'; raiz.classList.add('tema-anim'); pintar(); try { localStorage.setItem(chave, atual); } catch {} clearTimeout(b._t); b._t = setTimeout(() => raiz.classList.remove('tema-anim'), 500); };
   pintar();
 })();

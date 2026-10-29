@@ -247,9 +247,6 @@ select option,select optgroup{background:var(--papel);color:var(--texto)}
 .tema{display:inline-grid;place-items:center;width:2.4rem;height:2.4rem;padding:0;border:1.5px solid var(--barra-t);border-radius:50%;background:transparent;color:var(--barra-t);cursor:pointer}
 .tema:hover{background:#ffffff22}
 .tema:focus-visible{outline:2px solid var(--barra-t);outline-offset:2px}
-.tema .i-sol{display:none}
-:root[data-theme="dark"] .tema .i-sol{display:block}
-:root[data-theme="dark"] .tema .i-lua{display:none}
 #escolhas-vir .campo{margin-top:.3rem}
 #situacoes h3{margin-top:.8rem}
 @media print{.tema{display:none}}
@@ -421,3 +418,82 @@ body[data-vista="ficha"] .marca{display:none}
 @media print{.rolagem{display:none}}
 #r-rolar{display:block;width:100%;margin:.5rem 0 0;padding:.6rem 1rem;font:700 1.05rem var(--titulo);letter-spacing:.06em;border-radius:6px}
 #r-rolar:active{transform:translateY(1px)}
+
+/* ================= Revisão de interação: foco, hovers e animações ================= */
+:root{--ease:cubic-bezier(.2,.7,.2,1)}
+html{-webkit-tap-highlight-color:transparent}
+button,select,summary,label.btn,[role="button"]{touch-action:manipulation}
+button,.btn,summary,select,input,textarea{transition:background-color .15s,color .15s,border-color .15s,box-shadow .15s,filter .15s,opacity .15s,transform .12s var(--ease)}
+button:disabled{cursor:not-allowed}
+select{cursor:pointer}
+:where(button,select,input,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--tinta);outline-offset:2px}
+.barra :focus-visible{outline-color:var(--barra-t)}
+
+/* botão de tema: círculo, ícone centrado e troca com giro */
+.barra .tema{position:relative;display:inline-block;width:2.4rem;height:2.4rem;padding:0;border:1.5px solid var(--barra-t);border-radius:50%;background:transparent;color:var(--barra-t);overflow:hidden}
+.barra .tema svg{position:absolute;left:50%;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;display:block;transition:transform .5s var(--ease),opacity .3s}
+.barra .tema .i-sol{opacity:1;transform:rotate(0) scale(1)}
+.barra .tema .i-lua{opacity:0;transform:rotate(-120deg) scale(.3)}
+:root[data-theme="dark"] .barra .tema .i-sol{opacity:0;transform:rotate(120deg) scale(.3)}
+:root[data-theme="dark"] .barra .tema .i-lua{opacity:1;transform:rotate(0) scale(1)}
+.barra .tema:active{transform:scale(.94)}
+
+/* botões preenchidos: realce ao passar o mouse e leve afundar ao tocar */
+.mini,.btn,#abrir-exp,#exp-ok,#exp-zerar,#exp-cancelar,#proximo,#sortear,.atacar,.atacar-sar,#prot,#r-rolar,.dlg-botoes button,#abrir-chamado,.hub-acoes button,.card-botoes button,.grande,.s-botoes button,.s-linha button,#mapa-limpar{cursor:pointer}
+.mini:active,.btn:active,#abrir-exp:active,#exp-ok:active,#proximo:active,#sortear:active,.atacar:active,.atacar-sar:active,#prot:active,#r-rolar:active,.dlg-botoes button:active,#abrir-chamado:active,.hub-acoes button:active,.card-botoes button:active,.grande:active,.s-botoes button:active,#mapa-limpar:active,.mapa-barra button:active,.barra .abas button:active,.barra .voltar:active{transform:translateY(1px)}
+.mapa-olho:active{transform:scale(.94)}
+
+/* pontos de nível (losangos) e losangos de valores */
+.pontos button{cursor:pointer}
+.d::before{transition:background-color .15s,box-shadow .15s}
+.d:focus-within::before{box-shadow:0 0 0 4px rgba(179,50,44,.28)}
+.nome-rolar{transition:color .15s}
+.voltar svg{transition:transform .18s var(--ease)}
+
+/* diálogos e painéis entram suavemente */
+dialog[open]{animation:dlg-entrar .22s var(--ease)}
+dialog[open]::backdrop{animation:dlg-fundo .22s ease-out}
+@keyframes dlg-entrar{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes dlg-fundo{from{opacity:0}to{opacity:1}}
+.rolagem.aberta{animation:subir .25s var(--ease)}
+@keyframes subir{from{opacity:.5;transform:translateY(14px)}to{opacity:1;transform:none}}
+#aviso{animation:surgir .25s ease-out}
+.card-ficha{transition:transform .2s var(--ease),box-shadow .2s,border-color .2s}
+.card-retrato img{transition:transform .35s var(--ease)}
+
+/* hovers: só em dispositivos com mouse (evita "hover preso" no toque) */
+@media (hover:hover){
+  .mini:hover,.btn:hover,#abrir-exp:hover,#exp-ok:hover,#exp-zerar:hover,#exp-cancelar:hover,#proximo:hover,#sortear:hover,.atacar:hover,.atacar-sar:hover,#prot:hover,#r-rolar:hover,.dlg-botoes button:hover,#abrir-chamado:hover,.hub-acoes button:hover,.card-botoes button:hover,.grande:hover,.s-botoes button:hover,.s-linha button:hover,#mapa-limpar:hover{filter:brightness(1.12);box-shadow:0 2px 6px #0003}
+  .barra .tema:hover{background:#ffffff22;border-color:#fff}
+  .barra .tema:hover .i-sol{transform:rotate(30deg) scale(1.12)}
+  :root[data-theme="dark"] .barra .tema:hover .i-sol{transform:rotate(120deg) scale(.3)}
+  :root[data-theme="dark"] .barra .tema:hover .i-lua{transform:rotate(-14deg) scale(1.12)}
+  .barra .abas button:not(.on):hover{background:#ffffff22}
+  .barra .voltar:hover svg{transform:translateX(-3px)}
+  .card-ficha:hover{transform:translateY(-3px);box-shadow:0 8px 18px #0003;border-color:var(--tinta)}
+  .card-ficha:hover .card-retrato img{transform:scale(1.05)}
+  .pontos button:hover{background:rgba(179,50,44,.3);transform:rotate(45deg) scale(1.22)}
+  .pontos button.on:hover{background:var(--tinta)}
+  .losango:hover .d::before{background-color:rgba(179,50,44,.1)}
+  .nome-rolar:hover{color:var(--tinta);text-decoration:underline;text-underline-offset:3px}
+  input:not([type="checkbox"]):not([type="file"]):hover,select:hover{border-bottom-color:var(--tinta)}
+  textarea:hover{border-color:var(--tinta)}
+  input[type="checkbox"]:hover{transform:scale(1.12)}
+  .cond:hover,summary:hover{color:var(--tinta)}
+  .postura:hover{border-color:var(--tinta)}
+  .r-log summary:hover{background:var(--campo)}
+  .link-btn:hover{text-decoration-thickness:2px}
+  .btn-info:hover{transform:scale(1.1)}
+  .slot:not(.trancado) select:hover{border-bottom-color:var(--tinta)}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* ---------- Revisão: painel recolhido, espaçamentos e troca suave de tema ---------- */
+.rolagem:not(.aberta) #r-rolar,.rolagem:not(.aberta) .r-hist,.rolagem:not(.aberta) #r-res{display:none}
+#abrir-exp,#proximo{margin:.25rem .5rem .25rem 0}
+:root.tema-anim,:root.tema-anim *,:root.tema-anim *::before,:root.tema-anim *::after{transition:background-color .4s ease,color .4s ease,border-color .4s ease,fill .4s ease,box-shadow .4s ease!important}
+.duplo>.saida{flex:1;min-width:0}
+/* cartões do hub: "Abrir" é a ação principal; as demais ficam em contorno */
+.card-ficha .card-botoes button{background:transparent;color:var(--tinta);border:1.5px solid var(--tinta);padding:.2rem .6rem}
+.card-ficha .card-botoes button[data-acao="abrir"]{background:var(--tinta);color:var(--sobre-tinta)}
+@media (hover:hover){.card-ficha .card-botoes button:hover{background:var(--tinta);color:var(--sobre-tinta)}}
