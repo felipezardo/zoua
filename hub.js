@@ -1,6 +1,6 @@
 // ============ Hub de fichas, abas, retrato e página de Jornada ============
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const VISTAS = { hub: $('#hub'), ficha: $('#vista-ficha'), jornada: $('#vista-jornada') };
+const VISTAS = { hub: $('#hub'), ficha: $('#vista-ficha'), jornada: $('#vista-jornada'), cenas: $('#vista-cenas') };
 
 function mostrar(v) {
   for (const k in VISTAS) VISTAS[k].hidden = k !== v;

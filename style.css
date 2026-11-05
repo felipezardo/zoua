@@ -497,3 +497,85 @@ dialog[open]::backdrop{animation:dlg-fundo .22s ease-out}
 .card-ficha .card-botoes button{background:transparent;color:var(--tinta);border:1.5px solid var(--tinta);padding:.2rem .6rem}
 .card-ficha .card-botoes button[data-acao="abrir"]{background:var(--tinta);color:var(--sobre-tinta)}
 @media (hover:hover){.card-ficha .card-botoes button:hover{background:var(--tinta);color:var(--sobre-tinta)}}
+
+.hub-acoes a.btn{display:inline-block;text-decoration:none;background:transparent;color:var(--tinta);border:1.5px solid var(--tinta)}
+@media (hover:hover){.hub-acoes a.btn:hover{background:var(--tinta);color:var(--sobre-tinta)}}
+
+/* ---------- Sala da mesa: botão, rolagens compartilhadas e avisos ---------- */
+.barra .barra-dir{grid-column:3;justify-self:end;display:flex;align-items:center;gap:.45rem}
+.barra .barra-dir .tema{grid-column:auto}
+.barra .rede-bt{position:relative;display:grid;place-items:center;width:2.4rem;height:2.4rem;padding:0;border-radius:50%;background:transparent;border:1.5px solid var(--barra-t);color:var(--barra-t);cursor:pointer;transition:background .15s,transform .1s}
+@media (hover:hover){.barra .rede-bt:hover{background:#ffffff22}}
+.barra .rede-bt:active{transform:scale(.94)}
+.barra .rede-bt:focus-visible{outline:2px solid var(--barra-t);outline-offset:2px}
+.rede-dot{position:absolute;right:-1px;bottom:-1px;width:.7rem;height:.7rem;border-radius:50%;background:#8a8a8a;border:2px solid var(--barra)}
+.rede-bt[data-estado="conectado"] .rede-dot{background:#4cb050}
+.rede-bt[data-estado="conectando"] .rede-dot{background:#e0a030;animation:piscar 1s infinite}
+@keyframes piscar{50%{opacity:.35}}
+.rede-n{position:absolute;left:-.2rem;top:-.35rem;min-width:1.15rem;height:1.15rem;padding:0 .25rem;border-radius:999px;background:var(--tinta);color:var(--sobre-tinta);font:700 .68rem/1.15rem var(--corpo);text-align:center}
+body[data-vista="hub"] .rede-bt{display:none}
+.rede-codigo{text-align:center;margin:.3rem 0}
+.rede-codigo small{display:block;font:600 .72rem var(--corpo);text-transform:uppercase;letter-spacing:.08em;opacity:.7}
+.rede-codigo b{font:700 2.1rem var(--titulo);letter-spacing:.14em;color:var(--tinta)}
+.rede-linha{display:flex;gap:.6rem;align-items:flex-end}
+.rede-linha .campo{flex:1}
+#dlg-rede button,.rede-feed button{font:600 .85rem var(--titulo);background:var(--tinta);color:var(--sobre-tinta);border:1.5px solid var(--tinta);border-radius:4px;padding:.4rem .85rem;cursor:pointer}
+#dlg-rede button.sec{background:transparent;color:var(--tinta)}
+#dlg-rede button.perigo{border-color:#8a2a24;color:#8a2a24;background:transparent}
+.rede-feed{position:fixed;left:.8rem;bottom:.8rem;z-index:7;width:min(24rem,calc(100vw - 1.6rem));max-height:72vh;display:flex;flex-direction:column;background:var(--papel);border:3px double var(--tinta);box-shadow:0 2px 10px #0004;padding:.5rem .7rem}
+.rede-feed[hidden]{display:none}
+.rede-feed-topo{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.rede-feed-topo h3{margin:0;font:700 .95rem var(--titulo);color:var(--tinta)}
+.rede-feed-topo span button{margin-left:.3rem}
+.rede-feed .link-btn{background:none;border:0;color:var(--tinta);text-decoration:underline;padding:0;font:600 .8rem var(--corpo)}
+.rede-feed #rede-feed-x{width:1.8rem;height:1.8rem;padding:0;border-radius:50%;background:transparent;color:var(--tinta);font-size:1rem}
+.rede-feed-lista{list-style:none;margin:.4rem 0 0;padding:0;overflow:auto}
+.feed-item{margin-bottom:.5rem}
+.feed-cab{display:flex;align-items:baseline;gap:.3rem;font-size:.85rem}
+.feed-cab span{opacity:.7;font-size:.75rem}
+.feed-cab time{margin-left:auto;opacity:.6;font-size:.72rem}
+.feed-item .res-card{margin-top:.15rem}
+.feed-item.gm .res-card{border-left-color:#3a2a1e}
+.sem-anim .dado,.sem-anim .res-card,.sem-anim .veredito{animation:none!important}
+.rede-toasts{position:fixed;top:4.3rem;left:50%;transform:translateX(-50%);z-index:12;display:flex;flex-direction:column;gap:.35rem;align-items:center;width:max-content;max-width:94vw}
+.rede-toast{display:flex;flex-wrap:wrap;gap:.35rem;align-items:baseline;justify-content:center;padding:.4rem .9rem;border-radius:999px;background:var(--barra);color:var(--barra-t);border:1.5px solid var(--tinta);font:.85rem var(--corpo);cursor:pointer;animation:surgir .3s ease-out}
+.rede-toast.ok{border-color:var(--ok)}
+.rede-toast strong{font-family:var(--titulo)}
+@media (max-width:700px){.rede-feed{left:.4rem;right:.4rem;bottom:.4rem;width:auto}}
+@media print{.rede-feed,.rede-toasts,.rede-bt{display:none}}
+
+/* ---------- Cenas: visor com mapa/imagem e tokens (jogadores e Historiador) ---------- */
+.visor{position:relative;height:clamp(20rem,62vh,40rem);min-width:0;border:3px double var(--tinta);background:#d9cbab;overflow:hidden}
+.visor canvas{position:absolute;left:0;top:0;display:block;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.visor canvas.arrastando{cursor:grabbing}
+.visor canvas:focus-visible{outline:2px solid var(--tinta);outline-offset:-4px}
+.visor-msg{position:absolute;inset:0;display:grid;place-items:center;padding:1rem;text-align:center;font:italic 1.05rem var(--corpo);color:#5a4636;pointer-events:none}
+.visor-msg[hidden]{display:none}
+.pagina-cenas{max-width:1320px;margin:1rem auto;padding:1rem 1.2rem 1.4rem;background:var(--papel);border:3px double var(--tinta)}
+.pagina-cenas[hidden]{display:none}
+.cena-topo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem;border-bottom:3px double var(--tinta);padding-bottom:.5rem;margin-bottom:.7rem}
+.cena-topo h2{margin:0;font:700 1.5rem var(--titulo);color:var(--tinta)}
+.cena-acoes{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
+.pagina-cenas button{font:600 .85rem var(--titulo);background:var(--tinta);color:var(--sobre-tinta);border:1.5px solid var(--tinta);border-radius:4px;padding:.4rem .85rem;cursor:pointer}
+.pagina-cenas button.sec{background:transparent;color:var(--tinta)}
+.pagina-cenas .link-btn{background:none;border:0;color:var(--tinta);text-decoration:underline;padding:0;font:600 .85rem var(--corpo)}
+.cena-grade{display:grid;grid-template-columns:minmax(0,1fr) 22rem;gap:1rem;align-items:start}
+.cena-palco{min-width:0}
+.cena-lado{min-width:0}
+.cena-lado h3{margin:.4rem 0 .3rem;font:700 .95rem var(--titulo);color:var(--tinta);text-align:left}
+.cena-info{min-height:1.4rem;margin:.4rem 0 0;font-weight:600}
+.cena-feed{max-height:56vh;overflow:auto}
+.cena-combate{display:flex;gap:1rem;align-items:center;padding:.5rem .8rem;margin-bottom:.7rem;border:1.5px solid var(--linha);border-radius:8px;background:var(--campo)}
+.cena-combate[hidden]{display:none}
+.cena-rodada{display:grid;place-items:center;min-width:3.6rem}
+.cena-rodada small{font:600 .68rem var(--corpo);text-transform:uppercase;letter-spacing:.08em;opacity:.7}
+.cena-rodada b{font:700 1.9rem/1 var(--titulo);color:var(--tinta)}
+.cena-ordem{display:flex;flex-wrap:wrap;gap:.3rem;list-style:none;margin:.3rem 0 0;padding:0}
+.cena-ordem li{padding:.15rem .7rem;border:1.5px solid var(--linha);border-radius:999px;font-size:.82rem;background:var(--papel)}
+.cena-ordem li.adv{border-color:#5a4636}
+.cena-ordem li.feito{opacity:.5;text-decoration:line-through}
+.cena-ordem li.fora{opacity:.4;font-style:italic}
+@media(max-width:900px){.cena-grade{grid-template-columns:1fr}.pagina-cenas{margin:.5rem;padding:.7rem}.visor{height:clamp(18rem,55vh,34rem)}}
+@media print{.pagina-cenas{display:none}}
+
+@media(max-width:430px){.barra .voltar span{display:none}.barra .voltar{padding:.3rem .5rem}}

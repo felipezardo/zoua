@@ -27,18 +27,19 @@
     return `<span class="v-marca">${marca}</span><strong>${esc(r.grau)}</strong>`;
   }
   function falaResultado(r) {
-    const parte = r.runa ? 'Runa de Gandalf, sucesso automático' : r.magico ? 'Sucesso mágico, sucesso automático' : `total ${r.total} contra NA ${r.na}`;
+    const parte = r.autoSimb ? (r.invertido ? 'Olho de Sauron, sucesso automático' : 'Runa de Gandalf, sucesso automático') : r.magico ? 'Sucesso mágico, sucesso automático' : `total ${r.total} contra NA ${r.na}`;
     return `${r.nome}: ${r.grau}. Dado de Façanha ${r.f.map(nomeFacanha).join(' e ')}${r.f.length > 1 ? `, valendo ${nomeFacanha(r.fac)}` : ''}. ${r.suc.length ? `Dados de Sucesso ${r.suc.join(', ')}.` : 'Sem dados de Sucesso.'} ${r.icones ? `${r.icones} ícone${r.icones > 1 ? 's' : ''} de sucesso. ` : ''}${parte}.`;
   }
   function html(r) {
-    const automatico = r.runa || r.magico;
+    const autoSimb = r.invertido ? r.olho : r.runa, zeroSimb = r.invertido ? r.runa : r.olho; r.autoSimb = autoSimb;
+    const automatico = autoSimb || r.magico;
     const conta = automatico
-      ? `<span class="auto">${r.runa ? 'Runa de Gandalf: sucesso automático' : 'Sucesso mágico: automático'}</span>`
+      ? `<span class="auto">${autoSimb ? (r.invertido ? 'Olho de Sauron: sucesso automático' : 'Runa de Gandalf: sucesso automático') : 'Sucesso mágico: automático'}</span>`
       : `<span class="t-total" data-total="${r.total}">${r.total}</span><span class="vs">${r.ok ? '≥' : '<'}</span><span class="t-na"><small>NA</small> ${r.na}</span>`;
-    const soma = automatico ? '' : `<p class="soma">${r.olho ? 'Olho de Sauron vale 0' : `Façanha ${r.fac}`}${r.suc.length ? ` + dados ${r.total - (r.olho ? 0 : r.fac) - (r.bonus || 0)}` : ''}${r.bonus ? ` ${r.bonus > 0 ? '+' : '−'} bônus ${Math.abs(r.bonus)}` : ''}${r.olho && r.arrasado ? '. Arrasado: o Olho é falha automática' : ''}</p>`;
+    const soma = automatico ? '' : `<p class="soma">${zeroSimb ? (r.invertido ? 'Runa de Gandalf vale 0' : 'Olho de Sauron vale 0') : `Façanha ${r.fac}`}${r.suc.length ? ` + dados ${r.total - (zeroSimb ? 0 : r.fac) - (r.bonus || 0)}` : ''}${r.bonus ? ` ${r.bonus > 0 ? '+' : '−'} bônus ${Math.abs(r.bonus)}` : ''}${r.olho && r.arrasado ? '. Arrasado: o Olho é falha automática' : ''}</p>`;
     const chips = (r.chips || []).map((c) => `<span class="chip">${esc(c)}</span>`).join('');
     const ex = r.extra ? `<div class="r-extra"><div class="chips">${r.extra.chips.map((c) => `<span class="chip ${c.alerta ? 'alerta' : 'forte'}">${c.html}</span>`).join('')}</div>${r.extra.det?.length ? `<details><summary>Opções por ícone</summary><ul>${r.extra.det.map((d) => `<li>${d}</li>`).join('')}</ul></details>` : ''}</div>` : '';
-    return `<div class="res-card ${r.ok ? 'res-ok' : 'res-falha'}${r.runa ? ' res-runa' : ''}${r.olho ? ' res-olho' : ''}">
+    return `<div class="res-card ${r.ok ? 'res-ok' : 'res-falha'}${autoSimb ? ' res-runa' : ''}${zeroSimb ? ' res-olho' : ''}">
       <p class="sr-only">${esc(falaResultado(r))}</p>
       <div class="res-topo" aria-hidden="true"><div class="veredito">${veredito(r)}</div><div class="res-nome">${esc(r.nome)}</div></div>
       <div class="bandeja" aria-hidden="true">
@@ -73,13 +74,15 @@
       <div class="h-det"><strong>${esc(e.grau)}</strong> <time>${new Date(e.t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</time>
       <div class="bandeja mini" aria-hidden="true"><div class="dados">${tilesFacanha(e)}${e.suc.map((v) => `<span class="dado dado-s${e.exausto && v <= 3 ? ' zero' : ''}">${v === 6 ? ico('sucesso', 'ico-suc') : `<span>${v}</span>`}</span>`).join('')}</div></div></div></details></li>`).join('');
   }
-  document.getElementById('r-limpar').onclick = () => {
+  const bLimpar = document.getElementById('r-limpar'), bDesfazer = document.getElementById('r-desfazer');
+  if (bLimpar) bLimpar.onclick = () => {
     desfazer = lista().slice(); state.rol_hist = []; clearTimeout(tDesfazer); tDesfazer = setTimeout(() => { desfazer = null; renderHist(); }, 7000);
     renderHist(); salvar();
   };
-  document.getElementById('r-desfazer').onclick = () => { if (desfazer) { state.rol_hist = desfazer; desfazer = null; clearTimeout(tDesfazer); renderHist(); salvar(); } };
+  if (bDesfazer) bDesfazer.onclick = () => { if (desfazer) { state.rol_hist = desfazer; desfazer = null; clearTimeout(tDesfazer); renderHist(); salvar(); } };
 
   // ---------- API usada por app.js e sombra.js ----------
+  window.htmlResultado = html;
   window.mostrarRolagem = (r, alvo = '#r-res', guardar = true) => {
     const el = document.querySelector(alvo); if (!el) return;
     el.innerHTML = html(r);
@@ -87,8 +90,8 @@
     const card = el.querySelector('.res-card'); if (card) { card.classList.remove('nova'); void card.offsetWidth; card.classList.add('nova'); }
     el.scrollIntoView({ block: 'nearest', behavior: reduzir() ? 'auto' : 'smooth' });
     if (guardar) registrar(r);
+    if (guardar && window.RedeUI) RedeUI.publicarRolagem(r);
   };
-  const aplicarAnterior = aplicar;
-  aplicar = function (i) { aplicarAnterior(i); desfazer = null; renderHist(); };
+  if (typeof aplicar === 'function') { const aplicarAnterior = aplicar; aplicar = function (i) { aplicarAnterior(i); desfazer = null; renderHist(); }; }
   renderHist();
 })();

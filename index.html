@@ -14,17 +14,17 @@
 <nav class="barra" aria-label="Navegação">
   <button id="voltar" type="button" class="voltar" hidden aria-label="Voltar para as suas fichas"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Fichas</span></button>
   <strong id="titulo-barra" class="marca">O Um Anel</strong>
-  <div class="abas" id="abas" role="tablist" aria-label="Seções da ficha" hidden><button type="button" role="tab" aria-selected="true" data-aba="ficha" class="on">Ficha</button><button type="button" role="tab" aria-selected="false" data-aba="jornada">Jornada</button></div>
-  <button type="button" id="tema" class="tema" aria-label="Mudar para o tema escuro" aria-pressed="false" title="Mudar para o tema escuro">
+  <div class="abas" id="abas" role="tablist" aria-label="Seções da ficha" hidden><button type="button" role="tab" aria-selected="true" data-aba="ficha" class="on">Ficha</button><button type="button" role="tab" aria-selected="false" data-aba="jornada">Jornada</button><button type="button" role="tab" aria-selected="false" data-aba="cenas">Cenas</button></div>
+  <div class="barra-dir"><button type="button" id="rede-bt" class="rede-bt" data-estado="desconectado" aria-label="Conectar a uma sala da mesa" title="Conectar a uma sala da mesa"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 9.5a11 11 0 0 1 15 0"/><path d="M7.5 12.8a6.6 6.6 0 0 1 9 0"/><path d="M10.5 16a2.2 2.2 0 0 1 3 0"/><circle cx="12" cy="19" r=".8" fill="currentColor"/></svg><span class="rede-dot" aria-hidden="true"></span><span class="rede-n" hidden></span></button><button type="button" id="tema" class="tema" aria-label="Mudar para o tema escuro" aria-pressed="false" title="Mudar para o tema escuro">
     <svg class="i-lua" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path transform="translate(1.5 -2.1)" d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="currentColor"/></svg>
     <svg class="i-sol" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2.6v2.4M12 19v2.4M2.6 12H5M19 12h2.4M5.35 5.35l1.7 1.7M16.95 16.95l1.7 1.7M5.35 18.65l1.7-1.7M16.95 7.05l1.7-1.7"/></g></svg>
-  </button>
+  </button></div>
 </nav>
 
 <section id="hub" class="hub">
   <h2>Suas fichas</h2>
   <p class="nota">As fichas ficam guardadas neste navegador. Use Exportar para guardar uma cópia ou levar para outro aparelho.</p>
-  <div class="hub-acoes"><button type="button" id="hub-novo">Nova ficha</button><label class="btn">Importar JSON<input type="file" id="importar" accept=".json" hidden></label></div>
+  <div class="hub-acoes"><button type="button" id="hub-novo">Nova ficha</button><label class="btn">Importar JSON<input type="file" id="importar" accept=".json" hidden></label><a class="btn btn-mesa" href="historiador.html">Mesa do Historiador</a></div>
   <div id="hub-lista" class="hub-grade"></div>
 </section>
 
@@ -115,6 +115,14 @@
   </aside>
 </main>
 <main class="ficha jornada" id="vista-jornada" hidden></main>
+<main class="pagina-cenas" id="vista-cenas" hidden>
+  <header class="cena-topo"><h2 id="cena-titulo">Cenas</h2><div class="cena-acoes"><label class="cond-lbl"><input type="checkbox" id="cena-seguir"> Seguir o Historiador</label><button type="button" class="sec" id="cena-ajustar">Ver tudo</button></div></header>
+  <div id="cena-combate" class="cena-combate" hidden></div>
+  <div class="cena-grade">
+    <div class="cena-palco"><div id="cena-visor"></div><p id="cena-info" class="cena-info" role="status"></p></div>
+    <aside class="cena-lado"><p id="cena-aviso" class="nota"></p><h3>Rolagens da mesa</h3><ol id="cena-feed" class="rede-feed-lista cena-feed"></ol></aside>
+  </div>
+</main>
 <dialog id="dlg-info" aria-labelledby="info-t">
   <h2 id="info-t"></h2>
   <div id="info-corpo" class="info-corpo"></div>
@@ -198,5 +206,11 @@
 <script src="mapa.js"></script>
 <script src="sombra.js"></script>
 <script src="rolagem.js"></script>
+<script>window.REDE_PAPEL = 'jogador'; window.REDE_NOME = () => (typeof state !== 'undefined' && state.nome) || '';</script>
+<script src="rede.js"></script>
+<script src="rede-ui.js"></script>
+<script src="rede-ficha.js"></script>
+<script src="visor.js"></script>
+<script src="cena-jogador.js"></script>
 </body>
 </html>
