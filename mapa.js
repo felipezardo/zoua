@@ -1,4 +1,4 @@
-// ============ Mapa de Eriador: zoom, arrasto e marcação de hexágonos ============
+// ============ Mapa de Eriador: zoom, arrasto, marcação de hexágonos e controle de versão por senha ("mordor") ============
 // A malha desenhada no mapa original foi medida e refeita aqui em código. Todas as medidas
 // abaixo estão em pixels da imagem ORIGINAL (5112 x 3304), então o arquivo pode ser trocado por
 // uma versão menor ou maior da mesma imagem sem desalinhar nada.
@@ -43,7 +43,7 @@
       </div>
     </div>
     <div class="mapa-area" id="mapa-area">
-      <button type="button" id="mapa-olho" class="mapa-olho" aria-pressed="false" aria-label="Mostrar o mapa do Historiador" title="Mapa do Historiador">
+      <button type="button" id="mapa-olho" class="mapa-olho" aria-pressed="false" aria-label="Alternar versão do mapa (requer senha do Historiador)" title="Alternar versão do mapa (senha do Historiador)">
         <img class="o-fechado" src="assets/dados/olho-fechado.png" alt="" aria-hidden="true" draggable="false">
         <img class="o-aberto" src="assets/dados/olho-de-sauron.png" alt="" aria-hidden="true" draggable="false">
       </button>
@@ -52,6 +52,20 @@
     </div>
     <p class="nota" id="mapa-contagem" aria-live="polite"></p>
     <p class="nota">Arraste para mover e use dois dedos (ou os botões + e −) para o zoom. Escolha uma marca e toque num hexágono; tocar de novo com a mesma marca remove.</p>`;
+
+  if (!document.getElementById('dlg-senha-mapa')) {
+    document.body.insertAdjacentHTML('beforeend', `
+      <dialog id="dlg-senha-mapa" aria-labelledby="senha-mapa-t">
+        <h3 id="senha-mapa-t">Olho do Historiador</h3>
+        <p class="nota">Apenas o Historiador pode alternar a versão exibida do mapa (Jogadores / Historiador). Digite a senha para continuar:</p>
+        <label class="campo">Senha<input type="password" id="mapa-senha-in" placeholder="Digite a senha…" autocomplete="off"></label>
+        <p id="mapa-senha-erro" class="erro" role="alert" hidden></p>
+        <div class="dlg-botoes">
+          <button type="button" id="mapa-senha-ok">Confirmar</button>
+          <button type="button" class="sec" id="mapa-senha-nao">Cancelar</button>
+        </div>
+      </dialog>`);
+  }
 
   const area = document.getElementById('mapa-area'), cv = document.getElementById('mapa-canvas'), ctx = cv.getContext('2d');
   let vw = 0, vh = 0, dpr = 1, k = 0.1, tx = 0, ty = 0, iniciado = false, ferr = 1, malha = false, hover = null, sel = null, quadro = 0;
@@ -66,14 +80,46 @@
     m.img.src = m.src;
   }
   function trocarMapa(i) {
-    modo = i; carregar(i);
-    olho.setAttribute('aria-pressed', String(i === 1));
-    olho.setAttribute('aria-label', i ? 'Voltar ao mapa dos jogadores' : 'Mostrar o mapa do Historiador');
-    olho.title = i ? 'Mapa dos jogadores' : 'Mapa do Historiador';
-    aviso.textContent = 'Carregando o mapa…'; aviso.hidden = mapas[i].ok;
+    modo = i ? 1 : 0; carregar(modo);
+    olho.setAttribute('aria-pressed', String(modo === 1));
+    olho.setAttribute('aria-label', modo ? 'Voltar ao mapa dos jogadores (requer senha)' : 'Mostrar o mapa do Historiador (requer senha)');
+    olho.title = modo ? 'Mapa dos jogadores (requer senha)' : 'Mapa do Historiador (requer senha)';
+    aviso.textContent = 'Carregando o mapa…'; aviso.hidden = mapas[modo].ok;
     desenhar();
   }
   carregar(0);
+
+  function pedirSenhaTrocaMapa() {
+    const dlg = document.getElementById('dlg-senha-mapa');
+    const inp = document.getElementById('mapa-senha-in');
+    const err = document.getElementById('mapa-senha-erro');
+    if (!dlg || !inp) return;
+    inp.value = '';
+    if (err) { err.hidden = true; err.textContent = ''; }
+    const confirmarSenha = () => {
+      const val = (inp.value || '').trim().toLowerCase();
+      if (val !== 'mordor') {
+        if (err) { err.textContent = 'Senha incorreta. Digite a senha do Historiador.'; err.hidden = false; }
+        inp.focus();
+        return;
+      }
+      dlg.close();
+      const novo = modo ? 0 : 1;
+      trocarMapa(novo);
+      if (window.MapaHooks?.aoModo) window.MapaHooks.aoModo(novo);
+      else if (typeof Rede !== 'undefined' && Rede.conectado()) {
+        Rede.enviar('jornada-modo', { modo: novo ? 'historiador' : 'jogadores' });
+      }
+      if (window.RedeUI?.aviso) {
+        RedeUI.aviso(`Mapa alterado para: ${novo ? 'Mapa do Historiador' : 'Mapa dos Jogadores'}.`);
+      }
+    };
+    document.getElementById('mapa-senha-ok').onclick = confirmarSenha;
+    document.getElementById('mapa-senha-nao').onclick = () => dlg.close();
+    inp.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); confirmarSenha(); } };
+    dlg.showModal();
+    setTimeout(() => inp.focus(), 30);
+  }
 
   const kMin = () => Math.min(vw / IMG_W, vh / IMG_H);
   function limitar() {
@@ -127,7 +173,12 @@
     const pl = (v) => `${v} hexágono${v === 1 ? '' : 's'}`;
     document.getElementById('mapa-contagem').textContent = `Percurso: ${pl(n[1])}. Perigo: ${pl(n[2])}. Abrigo: ${pl(n[3])}.`;
   }
-  window.renderMapa = () => { if (modo !== 0) trocarMapa(0); iniciado = false; ajustarTamanho(); contar(); }; // sempre abre no mapa dos jogadores
+  window.renderMapa = () => { iniciado = false; ajustarTamanho(); contar(); };
+  window.Mapa = {
+    atualizar: () => { contar(); desenhar(); },
+    definirModo: (i) => trocarMapa(i ? 1 : 0),
+    modo: () => (modo ? 'historiador' : 'jogadores')
+  };
   function ajustarTamanho() {
     const r = area.getBoundingClientRect(); if (!r.width || !r.height) return;
     dpr = Math.min(window.devicePixelRatio || 1, 2); vw = Math.round(r.width); vh = Math.round(r.height);
@@ -184,7 +235,7 @@
     const f = e.target.closest('[data-ferr]');
     if (f) { ferr = +f.dataset.ferr; raiz.querySelectorAll('[data-ferr]').forEach(b => b.setAttribute('aria-checked', String(b === f))); return; }
     const id = e.target.closest('button')?.id;
-    if (id === 'mapa-olho') { trocarMapa(modo ? 0 : 1); return; }
+    if (id === 'mapa-olho') { pedirSenhaTrocaMapa(); return; }
     if (id === 'mapa-mais') { zoomEm(vw / 2, vh / 2, k * 1.4); guardarVista(); }
     else if (id === 'mapa-menos') { zoomEm(vw / 2, vh / 2, k / 1.4); guardarVista(); }
     else if (id === 'mapa-ajustar') ajustar();

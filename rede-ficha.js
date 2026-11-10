@@ -1,4 +1,4 @@
-// ============ Ficha ligada à sala: envia sua ficha e rolagens, recebe ajustes do Historiador ============
+// ============ Ficha ligada à sala: envia sua ficha, rolagens e Jornada compartilhada; recebe ajustes do Historiador ============
 (() => {
   const salvarOriginal = salvar, aplicarOriginal = aplicar;
   const cache = { src: '', mini: '' };
@@ -10,6 +10,32 @@
       im.onerror = () => ok(''); im.src = src;
     });
   }
+
+  // ---------- sincronização da Jornada compartilhada ----------
+  let ultimaJ = typeof jornadaDe === 'function' ? jornadaDe(state) : { v: {}, m: {} };
+  function enviarJornada() {
+    if (!Rede.conectado() || typeof jornadaDe !== 'function') return;
+    const atual = jornadaDe(state), d = diffJornada(ultimaJ, atual);
+    if (!d) return;
+    ultimaJ = atual;
+    Rede.enviar('jornada', d);
+  }
+  function aplicarDadosJornada(vObj, mObj) {
+    for (const k in vObj || {}) {
+      if (vObj[k] === '') delete state[k];
+      else state[k] = vObj[k];
+    }
+    state.mapa_eriador = state.mapa_eriador || {};
+    for (const c in mObj || {}) {
+      if (mObj[c] === null) delete state.mapa_eriador[c];
+      else state.mapa_eriador[c] = mObj[c];
+    }
+    ultimaJ = typeof jornadaDe === 'function' ? jornadaDe(state) : { v: {}, m: {} };
+    aplicarOriginal(true);
+    salvarOriginal();
+    if (window.Mapa) Mapa.atualizar();
+  }
+
   let t, ultimo = '';
   async function enviarFicha(forcar) {
     if (!Rede.conectado() || !(state.nome || '').trim()) return;
@@ -18,10 +44,48 @@
     if (!forcar && sig === ultimo) return; ultimo = sig; Rede.enviar('ficha', { nome: state.nome.trim(), f, ret });
   }
   const agendar = (forcar) => { clearTimeout(t); t = setTimeout(() => enviarFicha(forcar), forcar ? 100 : 800); };
-  salvar = function () { salvarOriginal(); agendar(); };
-  aplicar = function (i) { aplicarOriginal(i); if (Rede.conectado() && state.nome && Rede.nome !== state.nome.trim()) Rede.renomear(state.nome.trim()); agendar(); };
-  Rede.on('estado', () => { if (Rede.conectado()) { if (state.nome) Rede.renomear(state.nome.trim()); ultimo = ''; agendar(true); } });
+  salvar = function () { salvarOriginal(); enviarJornada(); agendar(); };
+  aplicar = function (i) {
+    aplicarOriginal(i);
+    if (i && typeof jornadaDe === 'function') ultimaJ = jornadaDe(state);
+    if (Rede.conectado() && state.nome && Rede.nome !== state.nome.trim()) Rede.renomear(state.nome.trim());
+    agendar();
+  };
+  Rede.on('estado', () => {
+    if (Rede.conectado()) {
+      if (state.nome) Rede.renomear(state.nome.trim());
+      if (window.Mapa) Mapa.definirModo(0); // padrão ao conectar: mapa dos jogadores
+      ultimo = '';
+      agendar(true);
+    }
+  });
   Rede.on('presenca', (p) => { if ([...p.values()].some((x) => x.papel === 'gm')) { if (!enviarFicha.visto) { enviarFicha.visto = true; ultimo = ''; agendar(true); } } else enviarFicha.visto = false; });
+
+  // Recebe alterações da Jornada vindas do Historiador ou de outros jogadores
+  RedeUI.on('jornada', (env) => {
+    const d = env.d || {};
+    aplicarDadosJornada(d.v, d.m);
+  });
+  RedeUI.on('jornada-estado', (env) => {
+    const d = env.d || {};
+    if (d.vazio) {
+      const a = typeof jornadaDe === 'function' ? jornadaDe(state) : { v: {}, m: {} };
+      if (Object.keys(a.v).length || Object.keys(a.m).length) {
+        ultimaJ = a;
+        Rede.enviar('jornada', a);
+      }
+    } else {
+      for (const k in state) if (typeof JORNADA_CHAVE !== 'undefined' && JORNADA_CHAVE.test(k)) delete state[k];
+      state.mapa_eriador = {};
+      aplicarDadosJornada(d.v, d.m);
+    }
+    if (window.Mapa) Mapa.definirModo(d.modo === 'historiador' ? 1 : 0);
+  });
+  RedeUI.on('jornada-modo', (env) => {
+    const modo = env.d?.modo === 'historiador' ? 1 : 0;
+    if (window.Mapa) Mapa.definirModo(modo);
+    RedeUI.aviso(`Historiador alterou o mapa exibido para: ${modo ? 'Mapa do Historiador' : 'Mapa dos Jogadores'}.`);
+  });
 
   // ajustes feitos pelo Historiador (dano, condições, posição) chegam aqui
   const ROT = { res: 'Resistência', esp: 'Esperança', sombra: 'Sombra', exausto: 'Exausto', arrasado: 'Arrasado', ferido: 'Ferido', postura: 'Postura' };

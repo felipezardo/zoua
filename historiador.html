@@ -16,6 +16,7 @@
   <div class="abas" id="abas" role="tablist" aria-label="Seções da Mesa">
     <button type="button" role="tab" aria-selected="true" data-aba="combate" class="on">Combate</button>
     <button type="button" role="tab" aria-selected="false" data-aba="cenas">Cenas</button>
+    <button type="button" role="tab" aria-selected="false" data-aba="jornada">Jornada</button>
     <button type="button" role="tab" aria-selected="false" data-aba="companhia">Companhia</button>
     <button type="button" role="tab" aria-selected="false" data-aba="adversarios">Adversários</button>
   </div>
@@ -28,6 +29,7 @@
 <main class="mesa">
   <section id="v-combate" class="vista" aria-label="Combate"></section>
   <section id="v-cenas" class="vista" aria-label="Cenas" hidden></section>
+  <section id="v-jornada" class="vista" aria-label="Jornada" hidden></section>
   <section id="v-companhia" class="vista" aria-label="Companhia" hidden></section>
   <section id="v-adversarios" class="vista" aria-label="Adversários" hidden></section>
 </main>
@@ -47,6 +49,7 @@
 
 <script src="data.js"></script>
 <script src="adversarios-data.js"></script>
+<script src="jornada.js"></script>
 <script src="rolagem.js"></script>
 <script>window.REDE_PAPEL = 'gm'; window.REDE_NOME = () => 'Historiador';</script>
 <script src="rede.js"></script>
@@ -54,6 +57,9 @@
 <script src="mesa-exemplo.js"></script>
 <script src="visor.js"></script>
 <script src="mesa.js"></script>
+<script src="jornada-gm.js"></script>
+<script src="mapa.js"></script>
 <script src="cena-gm.js"></script>
+<script src="tutorial.js"></script>
 </body>
 </html>

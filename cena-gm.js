@@ -10,7 +10,7 @@
     if (t.tp === 'h') { const h = mesa.herois[t.ref]; if (!h) return null; const d = derivar(h.ficha);
       return { id: t.id, tp: 'h', ref: t.ref, nome: h.nome, x: t.x, y: t.y, esc: t.esc || 1, img: h.ficha.retrato || '', cor: COR_HEROI, pct: d.resMax ? Math.round(h.res / d.resMax * 100) : null, res: h.res, resMax: d.resMax, fora: h.res <= 0, badges: [h.exausto && 'E', h.arrasado && 'A', h.ferido && 'F'].filter(Boolean), estados: COND.filter(([k]) => h[k]).map(([, n]) => n), oculto: !!t.oculto }; }
     const a = mesa.advs.find((x) => x.id === t.ref); if (!a) return null;
-    return { id: t.id, tp: 'a', ref: t.ref, nome: a.nome, x: t.x, y: t.y, esc: t.esc || 1, img: a.img || '', cor: a.cor, pct: a.resMax ? Math.round(a.res / a.resMax * 100) : null, res: a.res, resMax: a.resMax, fora: a.res <= 0, badges: a.feridas ? ['F'] : [], estados: [], oculto: !!t.oculto };
+    return { id: t.id, tp: 'a', ref: t.ref, nome: a.nome, x: t.x, y: t.y, esc: t.esc || 1, img: a.img || '', cor: a.cor, pct: a.resMax ? Math.round(a.res / a.resMax * 100) : null, res: a.res, resMax: a.resMax, fora: a.res <= 0, badges: a.feridas ? ['F'] : [], estados: [], oculto: !!t.oculto, bloqueio: a.bloqueio, armadura: a.armadura, poder: a.poder, feridas: a.feridas };
   }
   const tokensGM = () => C().tokens.map(resolver).filter(Boolean);
   const fundoLocal = () => { const f = C().fundo; return !f || f.tipo === 'nenhum' ? null : f.tipo === 'mapa' ? { tipo: 'mapa', modo: f.modo } : { tipo: 'imagem', src: f.src, w: f.w, h: f.h }; };
@@ -72,30 +72,47 @@
     const s = t.closest('[data-csel]'); if (s) { const tk = C().tokens.find((x) => x.id === sel); if (!tk) return; const k = s.dataset.csel;
       if (k === 'abrir') abrirToken(tk.tp, tk.ref); else if (k === 'maior') tk.esc = Math.min(4, +((tk.esc || 1) + 0.25).toFixed(2)); else if (k === 'menor') tk.esc = Math.max(0.5, +((tk.esc || 1) - 0.25).toFixed(2)); else if (k === 'ocultar') tk.oculto = !tk.oculto; else if (k === 'remover') { C().tokens = C().tokens.filter((x) => x.id !== sel); sel = null; visor.selecionar(null); }
       salvar(); atualizar(); sincronizar(); return; }
-    if (t.id === 'cena-proj') { C().ativa = !C().ativa; if (C().ativa) { if (!redeOn()) { C().ativa = false; RedeUI.aviso('Conecte-se a uma sala (botão de sinal na barra) para mostrar a cena aos jogadores.'); RedeUI.abrirConexao(); } else { enviarCena(); Rede.enviar('cena-foco', { vista: visor.vista() }); RedeUI.aviso('Cena visível para os jogadores.'); } } else if (redeOn()) { Rede.enviar('cena-fim', {}); RedeUI.aviso('Cena oculta dos jogadores.'); } atualizar(); return; }
-    if (t.id === 'cena-foco') { if (!redeOn()) return RedeUI.aviso('Conecte-se a uma sala primeiro.'); if (!C().ativa) { C().ativa = true; atualizar(); enviarCena(); } Rede.enviar('cena-foco', { vista: visor.vista() }); RedeUI.aviso('Jogadores levados a esta vista.'); return; }
+    if (t.id === 'cena-proj') { C().ativa = !C().ativa; if (C().ativa) { if (!redeOn()) { C().ativa = false; RedeUI.aviso('Conecte-se a uma sala (botão de sinal na barra) para mostrar a cena aos jogadores.'); RedeUI.abrirConexao(); } else { enviarCena(true); Rede.enviar('cena-foco', { vista: visor.vista() }); RedeUI.aviso('Cena visível para os jogadores.'); } } else if (redeOn()) { Rede.enviar('cena-fim', {}); RedeUI.aviso('Cena oculta dos jogadores.'); } atualizar(); return; }
+    if (t.id === 'cena-foco') { if (!redeOn()) return RedeUI.aviso('Conecte-se a uma sala primeiro.'); if (!C().ativa) { C().ativa = true; atualizar(); enviarCena(true); } Rede.enviar('cena-foco', { vista: visor.vista() }); RedeUI.aviso('Jogadores levados a esta vista.'); return; }
   });
   document.addEventListener('change', async (e) => {
     const t = e.target;
     if (t.id === 'cena-encaixar') { C().encaixar = t.checked; salvar(); } else if (t.id === 'cena-vida') { C().mostrarVida = t.checked; salvar(); sincronizar(); } else if (t.id === 'cena-ao-vivo') { C().aoVivo = t.checked; salvar(); sincronizar(); }
     else if (t.id === 'cena-titulo-in') { C().titulo = t.value.trim() || 'Cena'; salvar(); sincronizar(); }
-    else if (t.id === 'arq-cena-img') { const f = t.files[0]; if (!f) return; try { const im = await lerImagem(f, 1600); C().fundo = { tipo: 'imagem', ...im }; C().tokens.forEach((k) => { k.x = Math.min(k.x, im.w); k.y = Math.min(k.y, im.h); }); salvar(); atualizar(); sincronizar(true); } catch { RedeUI.aviso('Não consegui ler essa imagem.'); } }
+    else if (t.id === 'arq-cena-img') { const f = t.files[0]; if (!f) return; try { const im = await lerImagem(f, 1600); C().fundo = { tipo: 'imagem', ...im }; C().tokens.forEach((k) => { k.x = Math.min(k.x, im.w); k.y = Math.min(k.y, im.h); }); salvar(); atualizar(); sincronizar(true, true); } catch { RedeUI.aviso('Não consegui ler essa imagem.'); } }
   });
 
   // ---------- sincronização com os jogadores ----------
-  function sincronizar(agora) { if (!C().ativa || !redeOn()) return; clearTimeout(tSync); tSync = setTimeout(enviarCena, agora ? 0 : 150); }
+  function sincronizar(agora, comImgs) { if (!C().ativa || !redeOn()) return; clearTimeout(tSync); tSync = setTimeout(() => enviarCena(comImgs), agora ? 0 : 150); }
   function chaveImg(src) { if (!src) return ''; const k = 'i' + hash(src); imgPorKey.set(k, src); return k; }
   function dadosCena() {
     const c = C(), f = c.fundo;
     const fundo = !f || f.tipo === 'nenhum' ? null : f.tipo === 'mapa' ? { tipo: 'mapa', modo: f.modo } : { tipo: 'imagem', key: chaveImg(f.src), w: f.w, h: f.h };
-    const tokens = tokensGM().filter((t) => !t.oculto).map((t) => { const vida = t.tp === 'h' || c.mostrarVida; return { id: t.id, tp: t.tp, nome: t.nome, x: t.x, y: t.y, esc: t.esc, cor: t.cor, k: chaveImg(t.img), pct: vida ? t.pct : null, res: vida ? t.res : null, resMax: vida ? t.resMax : null, fora: t.fora, badges: t.tp === 'h' ? t.badges : [], estados: t.tp === 'h' ? t.estados : [] }; });
+    const tokens = tokensGM().filter((t) => !t.oculto).map((t) => {
+      const vida = t.tp === 'h' || c.mostrarVida;
+      return {
+        id: t.id, tp: t.tp, ref: t.ref, nome: t.nome, x: t.x, y: t.y, esc: t.esc, cor: t.cor, k: chaveImg(t.img),
+        pct: vida ? t.pct : null, res: vida ? t.res : null, resMax: vida ? t.resMax : null,
+        fora: t.fora, badges: t.tp === 'h' ? t.badges : [], estados: t.tp === 'h' ? t.estados : [],
+        bloqueio: t.tp === 'a' ? t.bloqueio : null, armadura: t.tp === 'a' ? t.armadura : null,
+        poder: t.tp === 'a' ? t.poder : null, feridas: t.tp === 'a' ? t.feridas : null
+      };
+    });
     const cb = mesa.combate, escondidos = new Set(c.tokens.filter((t) => t.tp === 'a' && t.oculto).map((t) => t.ref));
     const ordem = cb.ativo ? [...LANES.flatMap(([id]) => Object.values(mesa.herois).filter((h) => (h.postura || '') === id).map((h) => ({ nome: h.nome, tp: 'h', agiu: h.agiu, fora: h.res <= 0 }))), ...mesa.advs.filter((a) => a.zona !== 'reserva' && !escondidos.has(a.id)).map((a) => ({ nome: a.nome, tp: 'a', agiu: a.agiu, fora: a.res <= 0 }))] : [];
     return { id: c.id, titulo: c.titulo, fundo, tokens, combate: { ativo: cb.ativo, rodada: cb.rodada, fase: cb.fase, ordem }, vista: c.aoVivo && visor ? visor.vista() : null };
   }
-  function enviarCena() { if (!C().ativa || !redeOn()) return; Rede.enviar('cena', dadosCena()); }
-  RedeUI.on('cena-pedir', (env) => { const d = env.d || {}; if (d.estado && C().ativa) sincronizar(true); (d.keys || []).forEach((k) => { const src = imgPorKey.get(k); if (src) Rede.enviar('cena-img', { key: k, src }, env.de); }); });
-  Rede.on('presenca', () => { if (C().ativa) { const n = [...Rede.presentes.values()].filter((p) => p.papel === 'jogador').length; if (n !== (enviarCena.n || 0)) { enviarCena.n = n; sincronizar(true); } } });
+  function enviarCena(incluirImg) {
+    if (!C().ativa || !redeOn()) return;
+    const d = dadosCena();
+    Rede.enviar('cena', d);
+    if (incluirImg && d.fundo?.tipo === 'imagem' && d.fundo.key) {
+      const src = imgPorKey.get(d.fundo.key);
+      if (src) Rede.enviar('cena-img', { key: d.fundo.key, src });
+    }
+  }
+  RedeUI.on('cena-pedir', (env) => { const d = env.d || {}; if (d.estado && C().ativa) sincronizar(true, true); (d.keys || []).forEach((k) => { const src = imgPorKey.get(k); if (src) Rede.enviar('cena-img', { key: k, src }, env.de); }); });
+  Rede.on('presenca', () => { if (C().ativa) { const n = [...Rede.presentes.values()].filter((p) => p.papel === 'jogador').length; if (n !== (enviarCena.n || 0)) { enviarCena.n = n; sincronizar(true, true); } } });
   Rede.on('estado', () => { if (!redeOn() && C().ativa) { C().ativa = false; atualizar(); } });
 
   // a cena acompanha tudo que muda na mesa (vida, condições, posições, adversários)

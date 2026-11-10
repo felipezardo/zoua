@@ -78,7 +78,7 @@
   </div>
 
   <aside class="lateral">
-    <button type="button" id="retrato" class="retrato" aria-label="Alterar retrato do personagem"><img id="retrato-img" alt="" hidden><span>Retrato<br><small>toque para escolher</small></span></button>
+    <button type="button" id="retrato" class="retrato" aria-label="Alterar retrato do personagem"><img id="retrato-img" alt="" hidden><span>Retrato<br><small>toque para escolher (1:1)</small></span></button>
     <div class="pontos3">
       <label class="losango"><small>Pontos de Aventura</small><span class="d"><input type="number" min="0" data-k="pa"></span></label>
       <label class="losango"><small>Pontos de Perícia</small><span class="d"><input type="number" min="0" data-k="pp"></span></label>
@@ -116,7 +116,7 @@
 </main>
 <main class="ficha jornada" id="vista-jornada" hidden></main>
 <main class="pagina-cenas" id="vista-cenas" hidden>
-  <header class="cena-topo"><h2 id="cena-titulo">Cenas</h2><div class="cena-acoes"><label class="cond-lbl"><input type="checkbox" id="cena-seguir"> Seguir o Historiador</label><button type="button" class="sec" id="cena-ajustar">Ver tudo</button></div></header>
+  <header class="cena-topo"><h2 id="cena-titulo">Cenas</h2><div class="cena-acoes"><label class="cond-lbl"><input type="checkbox" id="cena-seguir"> Seguir o Historiador</label><button type="button" class="sec" id="cena-ajustar" title="Centralizar e ajustar o zoom para enxergar o mapa/cena inteira na tela">Enquadrar cena</button></div></header>
   <div id="cena-combate" class="cena-combate" hidden></div>
   <div class="cena-grade">
     <div class="cena-palco"><div id="cena-visor"></div><p id="cena-info" class="cena-info" role="status"></p></div>
@@ -171,11 +171,26 @@
   </div>
 </aside>
 <dialog id="dlg-retrato" aria-labelledby="ret-t">
-  <h3 id="ret-t">Retrato do personagem</h3>
+  <h3 id="ret-t">Retrato do personagem (Formato Quadrado 1:1)</h3>
   <label class="campo">Escolher um arquivo de imagem<input type="file" id="ret-arquivo" accept="image/*"></label>
+  <div id="ret-crop-box" class="ret-crop-box" hidden>
+    <p class="nota">Arraste a imagem no quadrado abaixo e ajuste o zoom para escolher o enquadramento exato (1:1) que aparecerá na ficha e no token:</p>
+    <div class="ret-crop-grade">
+      <div class="ret-crop-quad">
+        <canvas id="ret-canvas" width="360" height="360"></canvas>
+      </div>
+      <div class="ret-crop-lado">
+        <small>Prévia no Token</small>
+        <canvas id="ret-token-prev" width="96" height="96"></canvas>
+        <button type="button" class="sec mini" id="ret-centralizar">Centralizar</button>
+      </div>
+    </div>
+    <label class="campo">Zoom do recorte quadrado<input type="range" id="ret-zoom" min="1" max="3.5" step="0.02" value="1"></label>
+    <button type="button" id="ret-salvar-crop">Salvar recorte quadrado</button>
+  </div>
   <label class="campo">Ou colar o endereço (link) de uma imagem<input id="ret-url" placeholder="https://..."></label>
-  <p class="nota">Arquivos são reduzidos e guardados na ficha. Links dependem da internet e podem ser bloqueados em algumas versões do site.</p>
-  <div class="dlg-botoes"><button type="button" id="ret-usar">Usar link</button><button type="button" id="ret-remover">Remover</button><button type="button" id="ret-fechar">Fechar</button></div>
+  <p class="nota">Arquivos são recortados no formato quadrado (1:1) e guardados na ficha.</p>
+  <div class="dlg-botoes"><button type="button" id="ret-usar">Usar / Salvar</button><button type="button" id="ret-remover">Remover</button><button type="button" id="ret-fechar">Fechar</button></div>
 </dialog>
 <dialog id="dlg-sombra" aria-labelledby="s-t">
   <h3 id="s-t">Sombra e Esperança</h3>
@@ -201,6 +216,7 @@
   <div class="dlg-botoes"><button type="button" id="s-fechar">Fechar</button></div>
 </dialog>
 <script src="data.js"></script>
+<script src="jornada.js"></script>
 <script src="app.js"></script>
 <script src="hub.js"></script>
 <script src="mapa.js"></script>
@@ -212,5 +228,6 @@
 <script src="rede-ficha.js"></script>
 <script src="visor.js"></script>
 <script src="cena-jogador.js"></script>
+<script src="tutorial.js"></script>
 </body>
 </html>

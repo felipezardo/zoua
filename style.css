@@ -579,3 +579,60 @@ body[data-vista="hub"] .rede-bt{display:none}
 @media print{.pagina-cenas{display:none}}
 
 @media(max-width:430px){.barra .voltar span{display:none}.barra .voltar{padding:.3rem .5rem}}
+
+/* ---------- Retrato em Formato Quadrado (1:1) e Seletor de Recorte ---------- */
+.retrato, .card-retrato { aspect-ratio: 1 / 1 !important; }
+.retrato img, .card-retrato img { width: 100%; height: 100%; object-fit: cover; }
+.ret-crop-box { margin: .6rem 0; padding: .65rem; border: 1.5px solid var(--linha); border-radius: 8px; background: var(--campo); animation: surgir .25s ease-out; }
+.ret-crop-box[hidden] { display: none !important; }
+.ret-crop-grade { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: center; margin: .5rem 0; }
+.ret-crop-quad { width: 220px; height: 220px; border: 2.5px solid var(--tinta); border-radius: 6px; overflow: hidden; box-shadow: 0 3px 10px #0004; background: #241b13; position: relative; }
+.ret-crop-quad canvas { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+.ret-crop-quad canvas:active { cursor: grabbing; }
+.ret-crop-lado { display: flex; flex-direction: column; align-items: center; gap: .45rem; font-size: .8rem; }
+.ret-crop-lado canvas { width: 88px; height: 88px; border-radius: 50%; box-shadow: 0 2px 6px #0004; }
+#ret-salvar-crop { display: block; width: 100%; margin-top: .45rem; padding: .5rem .9rem; font: 700 .9rem var(--titulo); background: var(--tinta); color: var(--sobre-tinta); border: 1.5px solid var(--tinta); border-radius: 5px; cursor: pointer; }
+
+/* ---------- Lista de conectados e expulsar jogador ---------- */
+.rede-presentes li { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .22rem 0; border-bottom: 1px dashed var(--linha); }
+.rede-presentes li button.mini { padding: .18rem .55rem; font-size: .75rem; }
+.rede-n-rol { position: absolute; left: -.2rem; top: -.35rem; min-width: 1.15rem; height: 1.15rem; padding: 0 .25rem; border-radius: 999px; background: var(--tinta); color: var(--sobre-tinta); font: 700 .68rem/1.15rem var(--corpo); text-align: center; }
+
+/* ---------- Painel de Ataque Contextual na Cena e Chips de Alvos ---------- */
+.cena-alvos-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-bottom: .55rem; padding: .45rem .65rem; border: 1.5px solid var(--linha); border-radius: 8px; background: var(--campo); animation: surgir .22s ease-out; }
+.cena-alvos-bar[hidden] { display: none !important; }
+.cena-alvos-rot { font: 700 .8rem var(--titulo); color: var(--tinta); margin-right: .25rem; }
+.chip-alvo-cena { border-radius: 999px !important; padding: .22rem .75rem !important; font-size: .8rem !important; transition: transform .15s var(--ease), background-color .15s, color .15s, box-shadow .15s; }
+.chip-alvo-cena.on { background: var(--tinta) !important; color: var(--sobre-tinta) !important; box-shadow: 0 2px 8px rgba(179,50,44,.35); }
+.chip-alvo-cena.fora { opacity: .48; text-decoration: line-through; }
+
+.cena-ataque { margin-bottom: .8rem; padding: .7rem .8rem; border: 2px solid var(--tinta); border-radius: 8px; background: var(--campo); box-shadow: 0 3px 12px #0002; animation: surgir .25s ease-out; }
+.cena-ataque[hidden] { display: none !important; }
+.ca-topo { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .25rem; }
+.ca-topo h4 { margin: 0; font: 700 1.02rem var(--titulo); color: var(--tinta); }
+.ca-campos { display: grid; gap: .4rem; margin: .45rem 0 .6rem; }
+.ca-aguardando { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; padding: .5rem .65rem; border: 1.5px dashed var(--tinta); border-radius: 6px; background: var(--papel); font-weight: 600; animation: pulsar 1.4s infinite ease-in-out; }
+#ca-rolar { width: 100%; margin-top: .2rem; }
+#ca-res { margin-top: .5rem; }
+
+/* ---------- Modal de Tutorial e Senha do Mapa ---------- */
+#dlg-tutorial { width: min(46rem, 94vw); }
+.tut-abas { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0 .8rem; }
+.tut-abas .chip-cat { padding: .3rem .75rem; border: 1.5px solid var(--tinta); border-radius: 999px; background: transparent; color: var(--tinta); font: 600 .8rem var(--titulo); cursor: pointer; }
+.tut-abas .chip-cat.on { background: var(--tinta); color: var(--sobre-tinta); }
+.tut-corpo h4 { margin: .4rem 0; font: 700 1.05rem var(--titulo); color: var(--tinta); }
+.tut-corpo ul.lista li { margin-bottom: .35rem; line-height: 1.42; }
+.tut-corpo code, .tut-corpo kbd { padding: .08rem .38rem; border: 1px solid var(--linha); border-radius: 4px; background: var(--campo); font-family: monospace; font-size: .88em; }
+#dlg-senha-mapa .erro { color: var(--tinta); font-weight: 700; margin: .3rem 0 0; }
+#dlg-autorizar-ataque { width: min(34rem, 94vw); }
+
+/* ---------- Hovers e Micro-animações Intuitivas Adicionais ---------- */
+@media (hover:hover) {
+  button:not(:disabled):hover, .btn:hover { transform: translateY(-1px); }
+  button:not(:disabled):active, .btn:active { transform: translateY(1px) scale(.98); }
+  .chip-alvo-cena:hover { transform: translateY(-2px); box-shadow: 0 3px 8px #0003; }
+  .tut-abas .chip-cat:hover:not(.on) { background: rgba(179,50,44,.12); }
+  .mapa-grupo button:hover { border-color: var(--tinta); box-shadow: 0 2px 5px #0002; }
+  .mapa-olho:hover { transform: scale(1.08); box-shadow: 0 3px 10px #0004; }
+  .retrato:hover { border-color: var(--tinta); box-shadow: 0 4px 12px #0003; transform: translateY(-2px); }
+}
