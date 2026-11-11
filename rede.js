@@ -5,7 +5,7 @@
 (() => {
   const BROKERS_PADRAO = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://mqtt.eclipseprojects.io:443/mqtt', 'wss://test.mosquitto.org:8081'];
   const ALFABETO = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const TAM_PARTE = 10000; // fatiamento com confirmação/retransmissão automática de partes perdidas
+  const TAM_PARTE = 24000; // caracteres por mensagem (imagens grandes são fatiadas)
   const enc = new TextEncoder(), dec = new TextDecoder();
 
   // ---------- utilidades ----------
@@ -45,8 +45,8 @@
   const emitir = (ev, d) => (ouvintes[ev] || []).slice().forEach((f) => { try { f(d); } catch (e) { console.error(e); } });
   const mudar = (estado, erro = '') => { R.estado = estado; R.erro = erro; emitir('estado', estado); };
 
-  let ws = null, chave = null, topico = '', deve = false, tentativa = 0, idxBroker = 0, ping = null, ultimaAtividade = 0, hb = null, retryTimer = null;
-  const vistos = new Set(), partes = new Map(), enviados = new Map(), respondeu = new Map();
+  let ws = null, chave = null, topico = '', deve = false, tentativa = 0, idxBroker = 0, ping = null, ultimaAtividade = 0, hb = null, pacoteId = 1;
+  const vistos = new Set(), partes = new Map(), respondeu = new Map();
 
   async function prepararSala(sala) {
     const base = await crypto.subtle.importKey('raw', enc.encode(sala), 'PBKDF2', false, ['deriveKey']);
@@ -61,69 +61,20 @@
     if (!R.conectado()) return false;
     const env = { v: 1, i: aleat(6), de: R.id, n: R.nome, p: R.papel, t, d, para: para || null, ts: Date.now() };
     const s = await cifrar(env);
-    if (s.length <= 6500) return publicarBruto(s);
-    const id = aleat(4), total = Math.ceil(s.length / TAM_PARTE), fatias = [];
-    for (let k = 0; k < total; k++) {
-      const f = s.slice(k * TAM_PARTE, (k + 1) * TAM_PARTE);
-      fatias.push(f);
-      publicarBruto(`P|${id}|${k}|${total}|${f}`);
-      if (k % 4 === 3) await espera(15);
-    }
-    enviados.set(id, { total, fatias, t: Date.now() });
-    if (enviados.size > 30) enviados.delete(enviados.keys().next().value);
-    setTimeout(() => { if (R.conectado() && enviados.has(id)) publicarBruto(`E|${id}|${total}`); }, 80);
+    if (s.length <= TAM_PARTE) return publicarBruto(s);
+    const id = aleat(4), total = Math.ceil(s.length / TAM_PARTE);
+    for (let k = 0; k < total; k++) { publicarBruto(`P|${id}|${k}|${total}|${s.slice(k * TAM_PARTE, (k + 1) * TAM_PARTE)}`); if (k % 4 === 3) await espera(20); }
     return true;
   }
   R.enviar = enviar;
 
-  function pedirFaltantes(id, m) {
-    if (!R.conectado()) return;
-    const faltam = [];
-    for (let k = 0; k < m.total; k++) { if (m.p[k] === undefined) faltam.push(k); if (faltam.length >= 30) break; }
-    if (faltam.length) {
-      m.ult = Date.now();
-      m.tent = (m.tent || 0) + 1;
-      publicarBruto(`N|${id}|${faltam.join(',')}`);
-    }
-  }
-
-  function checarIncompletos() {
-    const agora = Date.now();
-    enviados.forEach((v, k) => { if (agora - v.t > 60000) enviados.delete(k); });
-    partes.forEach((m, id) => {
-      if (agora - m.t > 55000) { partes.delete(id); return; }
-      if (m.n < m.total && agora - (m.ult || m.t) >= 160 && (m.tent || 0) < 40) {
-        pedirFaltantes(id, m);
-      }
-    });
-  }
-
   async function receber(texto) {
     let s = texto;
     if (texto.startsWith('P|')) {
-      const p1 = texto.indexOf('|', 2), p2 = texto.indexOf('|', p1 + 1), p3 = texto.indexOf('|', p2 + 1);
-      if (p1 < 0 || p2 < 0 || p3 < 0) return;
-      const id = texto.slice(2, p1), k = +texto.slice(p1 + 1, p2), total = +texto.slice(p2 + 1, p3), parte = texto.slice(p3 + 1);
-      const m = partes.get(id) || { total, p: [], n: 0, t: Date.now(), ult: Date.now(), tent: 0 };
-      m.ult = Date.now();
-      if (m.p[k] === undefined) { m.p[k] = parte; m.n++; }
-      partes.set(id, m);
-      if (m.n < m.total) { if (partes.size > 25) [...partes.keys()].slice(0, 10).forEach((x) => partes.delete(x)); return; }
+      const [, id, k, total, parte] = texto.split('|'); const m = partes.get(id) || { total: +total, p: [], n: 0, t: Date.now() };
+      if (m.p[+k] === undefined) { m.p[+k] = parte; m.n++; } partes.set(id, m);
+      if (m.n < m.total) { if (partes.size > 20) [...partes.keys()].slice(0, 10).forEach((x) => partes.delete(x)); return; }
       partes.delete(id); s = m.p.join('');
-    } else if (texto.startsWith('E|')) {
-      const [, id, total] = texto.split('|');
-      let m = partes.get(id);
-      if (!m && +total > 0) { m = { total: +total, p: [], n: 0, t: Date.now(), ult: Date.now(), tent: 0 }; partes.set(id, m); }
-      if (m && m.n < m.total) pedirFaltantes(id, m);
-      return;
-    } else if (texto.startsWith('N|')) {
-      const [, id, lista] = texto.split('|');
-      const env = enviados.get(id);
-      if (!env || !lista) return;
-      const idxs = lista.split(',').map(Number).filter((k) => Number.isInteger(k) && k >= 0 && k < env.total);
-      idxs.forEach((k) => publicarBruto(`P|${id}|${k}|${env.total}|${env.fatias[k]}`));
-      if (idxs.length) setTimeout(() => { if (R.conectado() && enviados.has(id)) publicarBruto(`E|${id}|${env.total}`); }, 60);
-      return;
     }
     let env; try { env = await decifrar(s); } catch { return; } // outra sala ou mensagem corrompida
     if (!env || env.v !== 1 || env.de === R.id || vistos.has(env.i)) return;
@@ -137,7 +88,7 @@
     const novo = !R.presentes.has(env.de);
     R.presentes.set(env.de, { id: env.de, nome: env.d?.nome || env.n || '?', papel: env.p, visto: Date.now() });
     if (novo || (env.d && env.d.responder)) { const ult = respondeu.get(env.de) || 0; if (Date.now() - ult > 15000) { respondeu.set(env.de, Date.now()); setTimeout(() => enviar('oi', { nome: R.nome }), 200 + Math.random() * 600); } }
-    emitir('presenca', R.presentes);
+    if (novo) emitir('presenca', R.presentes); else emitir('presenca', R.presentes);
   }
 
   function abrir() {
@@ -167,13 +118,10 @@
     if (deve) R.sair();
     if (!crypto?.subtle) throw new Error('Este navegador/página não permite criptografia (use https ou localhost).');
     R.sala = formatar(sala); R.papel = papel || 'jogador'; R.nome = nome || 'Sem nome'; R.presentes = new Map(); R.erro = '';
-    partes.clear(); enviados.clear(); respondaLimpo();
     await prepararSala(sala); deve = true; tentativa = 0; abrir();
     clearInterval(hb); hb = setInterval(() => { if (R.conectado()) anunciar(false); const lim = Date.now() - 110000; let mudou = false; R.presentes.forEach((p, k) => { if (p.visto < lim) { R.presentes.delete(k); mudou = true; } }); if (mudou) emitir('presenca', R.presentes); }, 40000);
-    clearInterval(retryTimer); retryTimer = setInterval(checarIncompletos, 160);
   };
-  function respondaLimpo() { respondeu.clear(); }
-  R.sair = () => { deve = false; clearInterval(hb); clearInterval(ping); clearInterval(retryTimer); partes.clear(); enviados.clear(); respondaLimpo(); if (ws && ws.readyState === 1) { try { enviar('tchau', {}); setTimeout(() => ws && ws.close(), 150); } catch { ws.close(); } } else if (ws) ws.close(); R.presentes = new Map(); mudar('desconectado'); };
+  R.sair = () => { deve = false; clearInterval(hb); clearInterval(ping); if (ws && ws.readyState === 1) { try { enviar('tchau', {}); setTimeout(() => ws && ws.close(), 150); } catch { ws.close(); } } else if (ws) ws.close(); R.presentes = new Map(); mudar('desconectado'); };
   R.renomear = (nome) => { R.nome = nome; if (R.conectado()) anunciar(false); };
   window.Rede = R;
 })();

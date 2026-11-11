@@ -1,5 +1,5 @@
-// ============ Mesa do Historiador: companhia, adversários, combate, jornada compartilhada e autorização de ataques na cena ============
-// Roda só no navegador (sem servidor). Os jogadores exportam a ficha (JSON) e o Historiador importa aqui, ou conectam-se pela sala ao vivo.
+// ============ Mesa do Historiador: companhia, adversários e combate ============
+// Roda só no navegador (sem servidor). Os jogadores exportam a ficha (JSON) e o Historiador importa aqui.
 'use strict';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -12,27 +12,8 @@ const sinal = (n) => (n > 0 ? '+' + n : n < 0 ? '−' + Math.abs(n) : '0');
 
 // ---------- estado e salvamento ----------
 const CHAVE = 'um-anel-mesa-v1';
-const vazio = () => ({
-  v: 1,
-  herois: {},
-  advs: [],
-  custom: [],
-  cena: { id: 'c' + Math.random().toString(36).slice(2, 7), ativa: false, titulo: 'Cena', fundo: { tipo: 'mapa', modo: 'jogadores' }, tokens: [], encaixar: true, mostrarVida: false, aoVivo: false },
-  combate: { ativo: false, rodada: 0, fase: 'posicao', saraivada: true },
-  jornada: { v: {}, m: {}, modo: 'jogadores', vista: null },
-  log: []
-});
-let mesa = (() => {
-  try {
-    const o = JSON.parse(localStorage.getItem(CHAVE) || 'null');
-    if (o && o.v === 1) {
-      const m = Object.assign(vazio(), o);
-      m.jornada = Object.assign({ v: {}, m: {}, modo: 'jogadores', vista: null }, o.jornada || {});
-      return m;
-    }
-  } catch {}
-  return vazio();
-})();
+const vazio = () => ({ v: 1, herois: {}, advs: [], custom: [], cena: { id: 'c' + Math.random().toString(36).slice(2, 7), ativa: false, titulo: 'Cena', fundo: { tipo: 'mapa', modo: 'jogadores' }, tokens: [], encaixar: true, mostrarVida: false, aoVivo: false }, combate: { ativo: false, rodada: 0, fase: 'posicao', saraivada: true }, log: [] });
+let mesa = (() => { try { const o = JSON.parse(localStorage.getItem(CHAVE) || 'null'); if (o && o.v === 1) return Object.assign(vazio(), o); } catch {} return vazio(); })();
 let tSalvar;
 function salvar() { clearTimeout(tSalvar); tSalvar = setTimeout(() => { try { localStorage.setItem(CHAVE, JSON.stringify(mesa)); } catch { aviso('Não foi possível salvar neste navegador (espaço cheio?). Use "Salvar mesa" para guardar um backup.'); } }, 120); }
 let tAviso;
@@ -88,17 +69,7 @@ async function importarArquivos(files) {
   for (const file of files) {
     try {
       const o = JSON.parse(await file.text());
-      if (o && o.v === 1 && o.herois && o.advs) {
-        confirmar('Carregar a mesa?', `"${file.name}" é um backup completo da Mesa (Combate, Cenas, Companhia e Jornada) e vai substituir a mesa atual.`, () => {
-          mesa = Object.assign(vazio(), o);
-          mesa.jornada = Object.assign({ v: {}, m: {}, modo: 'jogadores', vista: null }, o.jornada || {});
-          salvar();
-          render();
-          if (window.JornadaGM) { JornadaGM.atualizar(); JornadaGM.enviarEstado(); }
-          aviso('Mesa completa carregada.');
-        }, 'Carregar');
-        continue;
-      }
+      if (o && o.v === 1 && o.herois && o.advs) { confirmar('Carregar a mesa?', `"${file.name}" é um backup da Mesa e vai substituir a mesa atual.`, () => { mesa = Object.assign(vazio(), o); salvar(); render(); aviso('Mesa carregada.'); }, 'Carregar'); continue; }
       for (const f of Array.isArray(o) ? o : [o]) {
         if (f && typeof f === 'object' && (f.cultura || f.forca_nivel !== undefined || f.nome)) { importarFicha(f) === 'nova' ? novos++ : atual++; } else aviso(`${file.name}: não parece uma ficha de O Um Anel.`);
       }
@@ -185,7 +156,7 @@ function cartaoHeroi(h) {
 function renderCompanhia() {
   const hs = Object.values(mesa.herois);
   $('#v-companhia').innerHTML = `<header class="mesa-topo"><h2>Companhia</h2><div class="acoes"><button type="button" data-acao="importar-fichas">Importar fichas</button><button type="button" class="sec" data-acao="salvar-mesa">Salvar mesa</button><button type="button" class="sec" data-acao="carregar-mesa">Carregar mesa</button></div></header>
-    <p class="nota">Cada jogador exporta a ficha (página inicial, botão Exportar) e envia o arquivo .json. Importe aqui, ou arraste os arquivos para esta página. "Salvar mesa" guarda tudo para a próxima sessão: Combate, Companhia, Cenas e a Ficha de Jornada compartilhada.</p>
+    <p class="nota">Cada jogador exporta a ficha (página inicial, botão Exportar) e envia o arquivo .json. Importe aqui, ou arraste os arquivos para esta página. Importar de novo a mesma ficha atualiza o personagem e traz os valores atuais dela.</p>
     ${hs.length ? `<div class="grade-cards">${hs.map(cartaoHeroi).join('')}</div>` : '<div class="vazio-box"><p>Nenhum personagem ainda.</p><div class="acoes" style="justify-content:center"><button type="button" data-acao="importar-fichas">Importar fichas</button><button type="button" class="sec" data-acao="exemplo">Carregar exemplo</button></div></div>'}`;
 }
 
@@ -240,7 +211,7 @@ function avisosEngajamento() {
   return av.length ? `<p class="alerta" role="status">⚠ ${av.join(' ')}</p>` : '';
 }
 function renderCombate() {
-  const c = mesa.combate, hs = Object.values(mesa.herois);
+  const c = mesa.combate, hs = Object.values(mesa.herois), onde = (e) => mesa.advs.length ? '' : '';
   const proximo = c.fase === 'saraivada' ? 'Ir para a Posição' : c.fase === 'posicao' ? 'Ir para o Engajamento' : c.fase === 'engajamento' ? 'Ir para a Resolução' : `Começar a rodada ${c.rodada + 1}`;
   const tracker = !c.ativo
     ? `<div class="tracker"><div><strong>Combate não iniciado.</strong> <label class="cond-lbl"><input type="checkbox" id="c-saraivada" ${c.saraivada ? 'checked' : ''}> Começar com Saraivadas de Abertura</label></div><button type="button" data-acao="iniciar">Iniciar combate</button></div>`
@@ -314,203 +285,14 @@ function abrirFicha(id) {
 }
 
 // ---------- rolagens do Historiador ----------
-function lancar(n, modo, inv, exausto = false) {
+function lancar(n, modo, inv) {
   const rank = inv ? (v) => (v === 12 ? 99 : v === 11 ? -1 : v) : (v) => (v === 12 ? -1 : v);
   const f = [dado(12)]; if (modo !== 'n') f.push(dado(12));
   const fac = modo === 'f' ? f.reduce((a, b) => (rank(b) > rank(a) ? b : a)) : modo === 'd' ? f.reduce((a, b) => (rank(b) < rank(a) ? b : a)) : f[0];
   const suc = Array.from({ length: Math.max(0, n) }, () => dado(6));
-  const soma = suc.reduce((s, v) => s + (exausto && v <= 3 ? 0 : v), 0);
-  return { f, fac, suc, soma, icones: suc.filter((v) => v === 6).length, runa: fac === 11, olho: fac === 12 };
+  return { f, fac, suc, soma: suc.reduce((s, v) => s + v, 0), icones: suc.filter((v) => v === 6).length, runa: fac === 11, olho: fac === 12 };
 }
 const graus = (ok, ic, positivo, negativo) => (!ok ? negativo : ic >= 2 ? positivo + ' extraordinário' : ic === 1 ? 'Grande ' + positivo.toLowerCase() : positivo);
-
-// ---------- Autorização de ataque solicitado pelo jogador na Cena ----------
-const filaPedidosAtaque = [];
-let pedidoAtaqueAtual = null;
-
-function garantirModalAutorizacao() {
-  if ($('#dlg-autorizar-ataque')) return;
-  document.body.insertAdjacentHTML('beforeend', `
-    <dialog id="dlg-autorizar-ataque" aria-labelledby="aut-t">
-      <div class="dlg-corpo" id="aut-corpo"></div>
-      <div class="dlg-botoes">
-        <button type="button" id="aut-aprovar">Autorizar e rolar</button>
-        <button type="button" class="sec perigo" id="aut-recusar">Recusar</button>
-      </div>
-    </dialog>`);
-  $('#aut-aprovar').onclick = () => resolverPedidoAtaque(true);
-  $('#aut-recusar').onclick = () => resolverPedidoAtaque(false);
-}
-
-function mostrarProximoPedidoAtaque() {
-  garantirModalAutorizacao();
-  const dlg = $('#dlg-autorizar-ataque');
-  if (!pedidoAtaqueAtual && filaPedidosAtaque.length) {
-    pedidoAtaqueAtual = filaPedidosAtaque.shift();
-  }
-  if (!pedidoAtaqueAtual) {
-    if (dlg.open) dlg.close();
-    return;
-  }
-  const p = pedidoAtaqueAtual;
-  const adv = mesa.advs.find((a) => a.id === p.advRef) || mesa.advs.find((a) => a.nome === p.advNome) || null;
-  const bloq = adv ? adv.bloqueio : p.bloqueioAdv;
-  const na = p.naForca + bloq;
-
-  $('#aut-corpo').innerHTML = `
-    <h2 id="aut-t">⚔ Autorizar ataque na Cena</h2>
-    <p><b>${esc(p.heroiNome)}</b> selecionou o token de <b>${esc(adv ? adv.nome : p.advNome)}</b> e pede autorização para rolar o ataque.</p>
-    <dl class="statblock">
-      <div><dt>Atacante</dt><dd>${esc(p.heroiNome)}</dd></div>
-      <div><dt>Posição</dt><dd>${esc(p.posturaNome || 'Sem posição')}</dd></div>
-      <div><dt>Alvo</dt><dd>${esc(adv ? adv.nome : p.advNome)} ${adv ? `(${adv.res}/${adv.resMax})` : ''}</dd></div>
-      <div><dt>Arma</dt><dd>${esc(p.arma?.n)} (${p.arma?.duas ? '2 mãos' : '1 mão'})</dd></div>
-      <div><dt>Dano / Ferim.</dt><dd>${p.arma?.d} / ${esc(p.arma?.f)}</dd></div>
-      <div><dt>Dados vs NA</dt><dd>${p.dados}d vs NA ${na}</dd></div>
-    </dl>
-    ${p.gastarEsp ? `<p class="nota">Gasta 1 de Esperança (${p.inspirado ? '+2d Inspirado' : '+1d'}).</p>` : ''}
-    <div class="form-grid">
-      <label class="campo">Modo da rolagem
-        <select id="aut-modo">
-          <option value="n"${p.modo === 'n' ? ' selected' : ''}>Normal</option>
-          <option value="f"${p.modo === 'f' ? ' selected' : ''}>Favorecida</option>
-          <option value="d"${p.modo === 'd' ? ' selected' : ''}>Desfavorecida</option>
-        </select>
-      </label>
-      <label class="campo">Ajuste extra do Historiador (±d)
-        <input type="number" id="aut-extra" value="0" min="-5" max="6">
-      </label>
-    </div>`;
-  if (!dlg.open) dlg.showModal();
-}
-
-function resolverPedidoAtaque(aprovado) {
-  const p = pedidoAtaqueAtual;
-  pedidoAtaqueAtual = null;
-  if (!p) return mostrarProximoPedidoAtaque();
-
-  if (!aprovado) {
-    registrar(`Ataque de ${p.heroiNome} contra ${p.advNome} recusado pelo Historiador.`);
-    if (redeOn()) Rede.enviar('ataque-resultado', { reqId: p.reqId, heroiId: p.heroiId, heroiNome: p.heroiNome, recusado: true });
-    mostrarProximoPedidoAtaque();
-    return;
-  }
-
-  const adv = mesa.advs.find((a) => a.id === p.advRef) || mesa.advs.find((a) => a.nome === p.advNome) || null;
-  const h = Object.values(mesa.herois).find((x) => x.nome === p.heroiNome) || null;
-  if (h && p.gastarEsp) {
-    h.esp = Math.max(0, h.esp - 1);
-  }
-
-  const modo = $('#aut-modo')?.value || p.modo || 'n';
-  const extraGM = Math.round(num($('#aut-extra')?.value, 0));
-  const dados = Math.max(0, p.dados + extraGM);
-  const bloq = adv ? adv.bloqueio : p.bloqueioAdv;
-  const na = p.naForca + bloq;
-
-  const r = lancar(dados, modo, false, !!p.exausto);
-  const total = (r.olho ? 0 : r.fac) + r.soma;
-  const ok = r.runa || (!(p.arrasado && r.olho) && total >= na);
-  const grau = graus(ok, r.icones, 'Sucesso', 'Falha');
-
-  let perf = ok && !r.olho && p.arma.n !== 'Desarmado' && (r.runa || r.fac >= (p.arma.afiada ? 9 : 10));
-  let iconesDisp = ok ? r.icones : 0;
-  let usouPerfurar = false;
-  if (ok && !perf && p.usarIcones && iconesDisp >= 1 && !r.olho && p.arma.n !== 'Desarmado' && (['Arcos', 'Lanças', 'Espadas'].includes(p.arma.p) || p.arma.n === 'Adaga')) {
-    const inc = 2 + (p.maosInclementes ? 1 : 0);
-    if (r.fac + inc >= (p.arma.afiada ? 9 : 10)) {
-      perf = true;
-      usouPerfurar = true;
-      iconesDisp -= 1;
-    }
-  }
-  const golpesPesados = (ok && p.usarIcones) ? iconesDisp : 0;
-  const pesadoUnit = (p.forcaNivel || 5) + (p.maosInclementes ? 1 : 0) + (p.arma.duas ? 1 : 0);
-  const perda = ok ? (Number(p.arma.d) || 0) + golpesPesados * pesadoUnit : 0;
-
-  const chips = [];
-  if (modo === 'f') chips.push('Favorecida');
-  if (modo === 'd') chips.push('Desfavorecida');
-  if (p.gastarEsp) chips.push(`Esperança +${p.inspirado ? 2 : 1}d${p.inspirado ? ' (Inspirado)' : ''}`);
-  if (p.exausto) chips.push('Exausto');
-  if (p.arrasado) chips.push('Arrasado');
-  if (golpesPesados) chips.push(`${golpesPesados}× Golpe Pesado (+${golpesPesados * pesadoUnit})`);
-  if (perf) chips.push('Golpe Perfurante!');
-
-  const rolagem = {
-    nome: `${p.heroiNome} → ${adv ? adv.nome : p.advNome}: ${p.arma.n}`,
-    grau, ok, na, total, bonus: 0,
-    f: r.f, fac: r.fac, modo, suc: r.suc,
-    exausto: !!p.exausto, arrasado: !!p.arrasado,
-    runa: r.runa, olho: r.olho, icones: r.icones, chips
-  };
-  if (window.RedeUI) RedeUI.publicarRolagem(rolagem, p.heroiNome);
-
-  let resumoDano = 'Errou: nenhum dano aplicado.';
-  let resumoProtecao = '';
-  let resumoCurto = `${p.heroiNome} errou o ataque contra ${adv ? adv.nome : p.advNome}.`;
-
-  if (ok && adv) {
-    const antes = adv.res;
-    adv.res = clamp(adv.res - perda, 0, adv.resMax);
-    if (p.luzirIra) adv.pts = clamp(adv.pts - (1 + r.icones), 0, adv.ptsMax);
-    resumoDano = `${adv.nome} perde ${perda} de Resistência (${antes} → ${adv.res}/${adv.resMax})${golpesPesados ? ` [${golpesPesados} Golpe(s) Pesado(s)]` : ''}${usouPerfurar ? ' [1 ícone em Perfurar]' : ''}.`;
-    registrar(`${p.heroiNome} ataca ${adv.nome} (${p.arma.n}): acerta e causa ${perda} de perda de Resistência (${antes} → ${adv.res}).`);
-
-    const ferArma = parseInt(p.arma.f, 10);
-    if (perf && !isNaN(ferArma) && ferArma > 0) {
-      const inv = adv.tipo === 'odio';
-      const modoProt = p.disparoFeroz ? 'd' : 'n';
-      const rp = lancar(adv.armadura, modoProt, inv, false);
-      const autoP = inv ? rp.olho : rp.runa;
-      const valP = inv ? (rp.olho ? 12 : rp.runa ? 0 : rp.fac) : (rp.olho ? 0 : rp.fac);
-      const totP = valP + rp.soma;
-      const okProt = autoP || totP >= ferArma;
-
-      if (window.RedeUI) {
-        RedeUI.publicarRolagem({
-          nome: `Proteção de ${adv.nome}`,
-          grau: okProt ? 'Protegido' : 'Ferido!',
-          ok: okProt, na: ferArma, total: totP, bonus: 0,
-          f: rp.f, fac: rp.fac, modo: modoProt, suc: rp.suc,
-          exausto: false, arrasado: false, runa: rp.runa, olho: rp.olho, icones: rp.icones,
-          invertido: inv, chips: [`Armadura ${adv.armadura}d`]
-        }, 'Historiador');
-      }
-
-      if (!okProt) {
-        adv.feridas = Math.min(adv.poder, adv.feridas + 1);
-        const caiu = adv.feridas >= adv.poder || adv.res <= 0;
-        if (adv.feridas >= adv.poder) adv.res = 0;
-        resumoProtecao = `Golpe Perfurante: ${adv.nome} falha na Proteção (${totP} vs ${ferArma}) e sofre 1 Ferimento (${adv.feridas}/${adv.poder})${caiu ? ' — fora de combate!' : ''}.`;
-        registrar(`${adv.nome} falha na Proteção e sofre um Ferimento (${adv.feridas}/${adv.poder})${caiu ? ' — fora de combate.' : '.'}`);
-      } else {
-        resumoProtecao = `Golpe Perfurante: ${adv.nome} resiste na Proteção (${autoP ? 'automático' : totP} vs ${ferArma}).`;
-        registrar(`${adv.nome} resiste ao Golpe Perfurante.`);
-      }
-    }
-    resumoCurto = `${p.heroiNome} acertou ${adv.nome} (−${perda} Resistência${resumoProtecao.includes('sofre 1 Ferimento') ? ' + 1 Ferimento!' : ''})!`;
-  } else if (!ok) {
-    registrar(`${p.heroiNome} ataca ${adv ? adv.nome : p.advNome} (${p.arma.n}): erra (${total} vs ${na}).`);
-  }
-
-  salvar();
-  render();
-  if (tkAtual) redesenharToken();
-
-  if (redeOn()) {
-    Rede.enviar('ataque-resultado', {
-      reqId: p.reqId,
-      heroiId: p.heroiId,
-      heroiNome: p.heroiNome,
-      rolagem,
-      resumoDano,
-      resumoProtecao,
-      resumoCurto
-    });
-  }
-  mostrarProximoPedidoAtaque();
-}
 
 // ---------- painel do token ----------
 let tkAtual = null, ultimoAtaque = null;
@@ -615,6 +397,7 @@ function rolarProtecao() {
 function sofrerAtaque() {
   const a = entidade(tkAtual.tp, tkAtual.id), dano = Math.max(0, Math.round(num($('#sf-dano').value))), fer = Math.max(0, Math.round(num($('#sf-fer').value))), perf = $('#sf-perf').checked, inv = $('#at-inv') ? $('#at-inv').checked : a.tipo === 'odio';
   if (dano) { const antes = a.res; a.res = clamp(a.res - dano, 0, a.resMax); registrar(`${a.nome} perde ${dano} de Resistência (${antes} → ${a.res}).`); }
+  let extra = '';
   if (perf) {
     const r = lancar(a.armadura, 'n', inv), auto = inv ? r.olho : r.runa, val = inv ? (r.olho ? 12 : r.runa ? 0 : r.fac) : (r.olho ? 0 : r.fac), total = val + r.soma, ok = auto || total >= fer;
     mostrarGM({ nome: `Proteção de ${a.nome}`, grau: ok ? 'Protegido' : 'Ferido!', ok, na: fer, total, bonus: 0, f: r.f, fac: r.fac, modo: 'n', suc: r.suc, exausto: false, arrasado: false, runa: r.runa, olho: r.olho, icones: r.icones, invertido: inv, chips: [`Armadura ${a.armadura}d`] }, '#tk-res3');
@@ -666,11 +449,10 @@ async function baixarToken(tp, id) {
 const reduzirImagem = (file, max) => new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => { const im = new Image(); im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); ok(c.toDataURL('image/jpeg', 0.85)); }; im.onerror = no; im.src = fr.result; }; fr.onerror = no; fr.readAsDataURL(file); });
 
 // ---------- navegação e tema ----------
-const VISTAS = ['combate', 'cenas', 'jornada', 'companhia', 'adversarios'];
+const VISTAS = ['combate', 'cenas', 'companhia', 'adversarios'];
 function irAba(n) {
-  VISTAS.forEach((v) => { const el = $('#v-' + v); if (el) el.hidden = v !== n; });
+  VISTAS.forEach((v) => { $('#v-' + v).hidden = v !== n; });
   $$('#abas button').forEach((b) => { const on = b.dataset.aba === n; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
-  if (n === 'jornada' && window.renderMapa) requestAnimationFrame(() => window.renderMapa());
   window.scrollTo(0, 0);
 }
 (() => {
@@ -754,7 +536,7 @@ document.addEventListener('input', (e) => { if (e.target.id === 'adv-q') { filtr
 let imgAlvo = null;
 $('#dlg-token').addEventListener('close', () => { tkAtual = null; ultimoAtaque = null; });
 
-// ---------- sala em tempo real: fichas, presença e autorização de ataques ----------
+// ---------- sala em tempo real: fichas e presença ----------
 function receberFicha(env) {
   const { f, ret } = env.d || {}; if (!f || !f.nome) return; if (ret) f.retrato = ret;
   const nome = f.nome.trim(), sig = JSON.stringify(f) + (ret ? ret.length : 0); let h = Object.values(mesa.herois).find((x) => x.nome === nome);
@@ -762,16 +544,7 @@ function receberFicha(env) {
   importarFicha(f, true); h = Object.values(mesa.herois).find((x) => x.nome === nome); h.sig = sig;
   salvar(); render(); if (tkAtual && tkAtual.tp === 'h' && tkAtual.id === h.id) redesenharToken();
 }
-if (window.RedeUI) {
-  RedeUI.on('ficha', receberFicha);
-  RedeUI.on('ataque-pedir', (env) => {
-    if (!env.d) return;
-    filaPedidosAtaque.push(env.d);
-    mostrarProximoPedidoAtaque();
-  });
-  Rede.on('presenca', () => { renderCompanhia(); });
-  Rede.on('estado', () => { renderCompanhia(); });
-}
+if (window.RedeUI) { RedeUI.on('ficha', receberFicha); Rede.on('presenca', () => { renderCompanhia(); }); Rede.on('estado', () => { renderCompanhia(); }); }
 
 // ---------- início ----------
 irAba('combate'); render(); renderAdversarios();

@@ -1,4 +1,4 @@
-// ============ Hub de fichas, abas, retrato com recorte quadrado (1:1) e página de Jornada ============
+// ============ Hub de fichas, abas, retrato e página de Jornada ============
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const VISTAS = { hub: $('#hub'), ficha: $('#vista-ficha'), jornada: $('#vista-jornada'), cenas: $('#vista-cenas') };
 
@@ -8,7 +8,6 @@ function mostrar(v) {
   document.body.dataset.vista = hub ? 'hub' : 'ficha';
   $('#voltar').hidden = hub; $('#abas').hidden = hub;
   $$('#abas button').forEach(b => { const on = b.dataset.aba === v; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
-  if (v === 'jornada' && window.renderMapa) requestAnimationFrame(() => window.renderMapa());
   window.scrollTo(0, 0);
 }
 
@@ -70,168 +69,64 @@ $('#importar').onchange = async (e) => {
 $('#voltar').onclick = voltarHub;
 $$('#abas button').forEach(b => b.onclick = () => mostrar(b.dataset.aba));
 
-// ---------- Retrato com Seletor de Recorte Quadrado (1:1) ----------
-let retratoId = null, cropImg = null, cropZoom = 1, cropOx = 0, cropOy = 0;
-
+// ---------- retrato ----------
+let retratoId = null;
 function renderRetrato() {
   const im = $('#retrato-img'), t = $('#retrato span');
   if (state.retrato) { im.src = state.retrato; im.hidden = false; t.hidden = true; } else { im.hidden = true; im.removeAttribute('src'); t.hidden = false; }
 }
 $('#retrato-img').onerror = () => { $('#retrato-img').hidden = true; $('#retrato span').hidden = false; avisar('Não foi possível carregar a imagem do link.'); };
-
-function desenharCropQuadrado() {
-  const cv = $('#ret-canvas'), tk = $('#ret-token-prev');
-  if (!cv || !cropImg) return;
-  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height; // 360x360
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#241b13';
-  ctx.fillRect(0, 0, W, H);
-
-  const baseScale = Math.max(W / cropImg.width, H / cropImg.height);
-  const scale = baseScale * cropZoom;
-  const dw = cropImg.width * scale, dh = cropImg.height * scale;
-  const maxOx = Math.max(0, (dw - W) / 2), maxOy = Math.max(0, (dh - H) / 2);
-  cropOx = Math.max(-maxOx, Math.min(maxOx, cropOx));
-  cropOy = Math.max(-maxOy, Math.min(maxOy, cropOy));
-
-  const dx = (W - dw) / 2 + cropOx, dy = (H - dh) / 2 + cropOy;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(cropImg, dx, dy, dw, dh);
-
-  if (tk) {
-    const tctx = tk.getContext('2d'), tw = tk.width, th = tk.height;
-    tctx.clearRect(0, 0, tw, th);
-    tctx.save();
-    tctx.beginPath();
-    tctx.arc(tw / 2, th / 2, tw / 2 - 4, 0, Math.PI * 2);
-    tctx.clip();
-    tctx.drawImage(cv, 0, 0, tw, th);
-    tctx.restore();
-    tctx.lineWidth = 4;
-    tctx.strokeStyle = '#b3322c';
-    tctx.beginPath();
-    tctx.arc(tw / 2, th / 2, tw / 2 - 4, 0, Math.PI * 2);
-    tctx.stroke();
-  }
-}
-
-function gravarRecorteAtual(fecharModal) {
-  const f = db.fichas[retratoId];
-  if (!f) return;
-  if (cropImg) {
-    desenharCropQuadrado();
-    const cv = $('#ret-canvas');
-    try {
-      f.retrato = cv.toDataURL('image/jpeg', 0.85);
-    } catch {}
-  }
-  salvar();
-  renderRetrato();
-  renderHub();
-  if (fecharModal) $('#dlg-retrato').close();
-}
-
-function iniciarImagemNoCrop(src) {
-  const box = $('#ret-crop-box'), z = $('#ret-zoom');
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = () => {
-    cropImg = img;
-    cropZoom = 1;
-    cropOx = 0;
-    cropOy = 0;
-    if (z) z.value = '1';
-    if (box) box.hidden = false;
-    gravarRecorteAtual(false);
-  };
-  img.onerror = () => avisar('Não foi possível ler esta imagem.');
-  img.src = src;
-}
-
 function abrirRetrato(id) {
-  retratoId = id;
-  const r = db.fichas[id]?.retrato || '';
-  $('#ret-url').value = r.startsWith('data:') ? '' : r;
-  const box = $('#ret-crop-box');
-  if (r) iniciarImagemNoCrop(r);
-  else { cropImg = null; if (box) box.hidden = true; }
-  $('#dlg-retrato').showModal();
+  retratoId = id; const r = db.fichas[id]?.retrato || '';
+  $('#ret-url').value = r.startsWith('data:') ? '' : r; $('#dlg-retrato').showModal();
 }
-
 function definirRetrato(v) {
   const f = db.fichas[retratoId]; if (!f) return;
   if (v) f.retrato = v; else delete f.retrato;
   salvar(); renderRetrato(); renderHub(); $('#dlg-retrato').close();
 }
-
 $('#retrato').onclick = () => abrirRetrato(db.ativo);
 $('#ret-fechar').onclick = () => $('#dlg-retrato').close();
-$('#ret-remover').onclick = () => { cropImg = null; definirRetrato(''); };
-$('#ret-usar').onclick = () => {
-  const u = $('#ret-url').value.trim();
-  if (u && /^https?:\/\//i.test(u)) definirRetrato(u);
-  else if (cropImg) gravarRecorteAtual(true);
-  else avisar('Escolha uma imagem do computador ou cole um endereço que comece com http:// ou https://');
-};
-$('#ret-salvar-crop')?.addEventListener('click', () => gravarRecorteAtual(true));
-$('#ret-centralizar')?.addEventListener('click', () => {
-  if (!cropImg) return;
-  cropZoom = 1; cropOx = 0; cropOy = 0;
-  if ($('#ret-zoom')) $('#ret-zoom').value = '1';
-  gravarRecorteAtual(false);
-});
-$('#ret-zoom')?.addEventListener('input', (e) => {
-  if (!cropImg) return;
-  cropZoom = parseFloat(e.target.value) || 1;
-  gravarRecorteAtual(false);
-});
-
-(() => {
-  const cv = $('#ret-canvas');
-  if (!cv) return;
-  let arrastando = false, ix = 0, iy = 0, iox = 0, ioy = 0;
-  cv.addEventListener('pointerdown', (e) => {
-    if (!cropImg) return;
-    arrastando = true; ix = e.clientX; iy = e.clientY; iox = cropOx; ioy = cropOy;
-    try { cv.setPointerCapture(e.pointerId); } catch {}
-  });
-  cv.addEventListener('pointermove', (e) => {
-    if (!arrastando || !cropImg) return;
-    const rect = cv.getBoundingClientRect();
-    const fator = cv.width / (rect.width || cv.width);
-    cropOx = iox + (e.clientX - ix) * fator;
-    cropOy = ioy + (e.clientY - iy) * fator;
-    desenharCropQuadrado();
-  });
-  const soltar = () => {
-    if (!arrastando) return;
-    arrastando = false;
-    gravarRecorteAtual(false);
-  };
-  cv.addEventListener('pointerup', soltar);
-  cv.addEventListener('pointercancel', soltar);
-  cv.addEventListener('wheel', (e) => {
-    if (!cropImg) return;
-    e.preventDefault();
-    cropZoom = Math.max(1, Math.min(3.5, cropZoom + (e.deltaY < 0 ? 0.1 : -0.1)));
-    if ($('#ret-zoom')) $('#ret-zoom').value = String(cropZoom.toFixed(2));
-    gravarRecorteAtual(false);
-  }, { passive: false });
-})();
-
+$('#ret-remover').onclick = () => definirRetrato('');
+$('#ret-usar').onclick = () => { const u = $('#ret-url').value.trim(); if (/^https?:\/\//i.test(u)) definirRetrato(u); else avisar('Cole um endereço que comece com http:// ou https://'); };
 $('#ret-arquivo').onchange = (e) => {
   const f = e.target.files[0]; if (!f) return;
   const fr = new FileReader();
-  fr.onload = () => iniciarImagemNoCrop(fr.result);
+  fr.onload = () => {
+    const img = new Image();
+    img.onload = () => { // reduz para caber no armazenamento do navegador
+      const k = Math.min(1, 360 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      definirRetrato(c.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => avisar('Não foi possível ler esta imagem.');
+    img.src = fr.result;
+  };
   fr.readAsDataURL(f); e.target.value = '';
 };
 
 // ---------- Jornada (página 2 da ficha) ----------
+const caixas = (k, n) => `<span class="pontos caixas" data-k="${k}">` + Array.from({ length: n }, (_, i) => `<button type="button" data-v="${i + 1}" aria-label="Fadiga ${i + 1}"></button>`).join('') + '</span>';
+const campo = (rot, k, extra = '') => `<label class="campo">${rot}<input data-k="${k}" ${extra}></label>`;
 function montarJornada() {
-  if (typeof htmlJornada === 'function') {
-    $('#vista-jornada').innerHTML = htmlJornada();
-    return;
-  }
+  const L7 = [0, 1, 2, 3, 4, 5, 6];
+  $('#vista-jornada').innerHTML = `
+  <header class="topo"><h2 class="titulo-pagina">Jornada</h2></header>
+  <div class="jor-cima">
+    <section><h3>Registro de Jornada</h3>${campo('Ano', 'j_ano')}${campo('Estação', 'j_estacao')}${campo('Jornada de', 'j_de')}${campo('Destino', 'j_destino')}${campo('Dias de viagem', 'j_dias', 'type="number" min="0"')}</section>
+    <section><h3>A Companhia</h3><div class="comp-cab"><span>Nome</span><span>Papel de Jornada</span><span>Fadiga de Viagem</span></div>
+      ${L7.map(i => `<div class="comp-linha"><input data-k="c${i}_nome" aria-label="Nome ${i + 1}"><input list="papeis" data-k="c${i}_papel" aria-label="Papel de Jornada ${i + 1}">${caixas('c' + i + '_fad', 10)}</div>`).join('')}
+      <datalist id="papeis"><option>Guia</option><option>Batedor</option><option>Caçador</option><option>Vigia</option></datalist></section>
+    <section><h3>Pôneis e Cavalos</h3><div class="pon-cab"><span>Nome</span><span>Vigor</span></div>
+      ${L7.map(i => `<div class="pon-linha"><input data-k="p${i}_nome" aria-label="Nome do animal ${i + 1}"><input type="number" min="0" data-k="p${i}_vigor" aria-label="Vigor ${i + 1}"></div>`).join('')}</section>
+    <section><h3>Diário</h3><textarea data-k="diario" rows="10" aria-label="Diário"></textarea></section>
+  </div>
+  <div class="jor-baixo">
+    <section class="mapa-box"><h3>Caminho da Jornada</h3><div id="mapa-app"></div></section>
+    <section class="eventos"><h3>Eventos</h3>
+      ${[1,2,3,4,5,6].map(n => `<fieldset><legend>Evento ${n}</legend>${campo('Alvo', 'e' + n + '_alvo')}${campo('Evento', 'e' + n + '_evento')}${campo('Resultado', 'e' + n + '_res')}</fieldset>`).join('')}</section>
+  </div>`;
 }
 montarJornada();
 
