@@ -60,11 +60,16 @@ assets/
 
 ## Etapa 2: imagens das cenas
 
-- As imagens de cena (fundo e tokens) agora vão para o **Firebase Realtime Database** (`firebase-config.js`, `nuvem.js`), em `salas/um-anel-<CÓDIGO>/imgs`. O jogador lê direto de lá.
+- As imagens de cena (fundo e tokens) agora vão para o **Firebase Realtime Database** (`firebase-config.js`, `nuvem.js`), em `um-anel/salas/<CÓDIGO>/imgs`. O jogador lê direto de lá.
 - Se o Firebase falhar (regras, config ou internet), a imagem vai pela sala em **pedaços pequenos**, e o jogador pede de volta os que faltarem.
 - Ao encerrar a sala, as imagens são apagadas do banco.
-- Regras necessárias no Firebase (Realtime Database > Regras): liberar leitura e escrita em `salas/um-anel-*`. Exemplo na resposta do chat / abaixo:
+- Regras necessárias no Firebase (Realtime Database > Regras): liberar leitura e escrita em `um-anel/salas/*` (veja as regras na resposta do chat). Exemplo na resposta do chat / abaixo:
 
 ```json
-{ "rules": { "salas": { "$sala": { ".read": true, ".write": true } } } }
+"um-anel": { "salas": { "$sala": {
+  ".read": "$sala.matches(/^[A-Z0-9-]{5,14}$/)",
+  ".write": "$sala.matches(/^[A-Z0-9-]{5,14}$/)",
+  "imgs": { "$k": { "src": { ".validate": "newData.isString() && newData.val().length < 3000000" } } }
+} } }
 ```
+(dentro de `"rules": { ... }`, ao lado do nó `"salas"` que já existe)

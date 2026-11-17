@@ -11,5 +11,5 @@ window.FIREBASE_CONFIG = {
   messagingSenderId: "317430061799",
   appId: "1:317430061799:web:f6ec67a1f4be6abe37a042"
 };
-// Prefixo dos dados no banco: tudo do zoua fica em salas/um-anel-<CÓDIGO>/ (separado do candeiaescura).
-window.FIREBASE_PREFIXO = 'salas/um-anel-';
+// Prefixo dos dados no banco: tudo do zoua fica em um-anel/salas/<CÓDIGO>/ (separado do candeiaescura).
+window.FIREBASE_PREFIXO = 'um-anel/salas/';

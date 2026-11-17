@@ -13,7 +13,7 @@
     } catch (e) { N.erro = String((e && e.message) || e); return false; }
   }
   const limpa = (k) => String(k).replace(/[.$#\[\]\/]/g, '_');
-  const ref = (sala, k) => DB.ref((window.FIREBASE_PREFIXO || 'salas/um-anel-') + sala + '/imgs' + (k ? '/' + limpa(k) : ''));
+  const ref = (sala, k) => DB.ref((window.FIREBASE_PREFIXO || 'um-anel/salas/') + limpa(sala) + '/imgs' + (k ? '/' + limpa(k) : ''));
   const comTempo = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('tempo esgotado')), ms))]);
   // Retorna true se a imagem está na nuvem.
   N.salvar = async (sala, key, src) => {
