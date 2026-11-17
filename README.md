@@ -10,6 +10,7 @@ historiador.html      Mesa do HISTORIADOR (combate, cenas, companhia, adversári
 
 style.css             visual compartilhado (tema claro/escuro, ficha, cenas, rolagens)
 mesa.css              visual extra da Mesa do Historiador
+animacoes.css         hovers, animações, retrato quadrado, janela de conexão e player de música
 
 data.js               regras (culturas, virtudes, recompensas, equipamento, posturas)
 adversarios-data.js   bestiário do livro (24 fichas)
@@ -24,6 +25,7 @@ rolagem.js            resultado das rolagens, animações, histórico
 rede.js               conexão em tempo real (MQTT por WebSocket + criptografia)
 rede-ui.js            botão de sala, janela de conexão, rolagens da mesa
 rede-ficha.js         liga a ficha à sala (envia ficha/rolagens, recebe ajustes)
+musica.js             música da mesa: o Historiador toca (YouTube ou link de áudio) e a sala ouve
 visor.js              visor de cena (mapa ou imagem + tokens, zoom e arrasto)
 cena-jogador.js       aba "Cenas" do jogador
 cena-gm.js            aba "Cenas" do Historiador
@@ -48,3 +50,10 @@ assets/
 - A sala usa brokers MQTT públicos e gratuitos (`broker.emqx.io`, `broker.hivemq.com`, `mqtt.eclipseprojects.io`, `test.mosquitto.org`), sem conta. Tudo é criptografado com o código da sala (AES-GCM). Se um servidor cair, o próximo da lista é usado. Pode-se trocar a lista em *Servidores (avançado)*.
 - Exige **HTTPS** (a Vercel já fornece) para a criptografia do navegador.
 - Os arquivos de mapa e o bestiário vêm de material com direitos autorais: se o repositório for público, considere deixar `assets/` e `adversarios-data.js` privados.
+
+## Novidades da etapa 1
+
+- **Conexão:** o ícone de sinal agora abre sempre a janela da sala. As rolagens da mesa têm botão próprio (ícone de dado, com contador de novas). O jogador pode **Sair da sala**; o Historiador pode **Expulsar** um jogador, **Readmitir** e **Encerrar a sala para todos**.
+- **Retrato:** ao escolher a imagem abre um editor quadrado com zoom e arrasto (o círculo mostra o token). O que você enquadra é o que aparece na ficha, no hub e na mesa.
+- **Música:** botão de nota musical na Mesa do Historiador (link do YouTube ou de áudio, biblioteca e repetir). Os jogadores ganham um mini-player com volume e mudo próprios.
+- **Visual:** hovers e animações nos botões, cartões, tokens, abas, sala e player.

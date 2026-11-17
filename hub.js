@@ -78,7 +78,7 @@ function renderRetrato() {
 $('#retrato-img').onerror = () => { $('#retrato-img').hidden = true; $('#retrato span').hidden = false; avisar('Não foi possível carregar a imagem do link.'); };
 function abrirRetrato(id) {
   retratoId = id; const r = db.fichas[id]?.retrato || '';
-  $('#ret-url').value = r.startsWith('data:') ? '' : r; $('#dlg-retrato').showModal();
+  $('#ret-url').value = r.startsWith('data:') ? '' : r; $('#ret-ajustar').hidden = !r; $('#dlg-retrato').showModal();
 }
 function definirRetrato(v) {
   const f = db.fichas[retratoId]; if (!f) return;
@@ -88,23 +88,50 @@ function definirRetrato(v) {
 $('#retrato').onclick = () => abrirRetrato(db.ativo);
 $('#ret-fechar').onclick = () => $('#dlg-retrato').close();
 $('#ret-remover').onclick = () => definirRetrato('');
-$('#ret-usar').onclick = () => { const u = $('#ret-url').value.trim(); if (/^https?:\/\//i.test(u)) definirRetrato(u); else avisar('Cole um endereço que comece com http:// ou https://'); };
+$('#ret-usar').onclick = () => {
+  const u = $('#ret-url').value.trim(); if (!/^https?:\/\//i.test(u)) return avisar('Cole um endereço que comece com http:// ou https://');
+  const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => { try { document.createElement('canvas').getContext('2d').drawImage(im, 0, 0, 1, 1); enqAbrir(im); } catch { definirRetrato(u); } };
+  im.onerror = () => { definirRetrato(u); avisar('Esse site não permite enquadrar a imagem: o link foi usado como está.'); }; im.src = u;
+};
+// Editor de enquadramento: a imagem final é SEMPRE quadrada (360×360), igual ao que aparece no token da mesa.
+const ENQ = { im: null, z: 1, x: 0, y: 0, p: new Map(), d0: 0, tam: 360 };
+const enqLim = () => { const cv = $('#enq-cv'), W = cv.width, im = ENQ.im, k = Math.max(W / im.width, W / im.height) * ENQ.z, w = im.width * k, h = im.height * k; return { k, w, h, mx: Math.max(0, (w - W) / 2), my: Math.max(0, (h - W) / 2) }; };
+function enqDesenhar(cv = $('#enq-cv'), W = cv.width) {
+  const im = ENQ.im; if (!im) return; const k = Math.max(W / im.width, W / im.height) * ENQ.z, w = im.width * k, h = im.height * k, mx = Math.max(0, (w - W) / 2), my = Math.max(0, (h - W) / 2);
+  ENQ.x = Math.max(-mx / W, Math.min(mx / W, ENQ.x)); ENQ.y = Math.max(-my / W, Math.min(my / W, ENQ.y));
+  const g = cv.getContext('2d'); g.fillStyle = '#d9cbab'; g.fillRect(0, 0, W, W); g.imageSmoothingQuality = 'high'; g.drawImage(im, W / 2 + ENQ.x * W - w / 2, W / 2 + ENQ.y * W - h / 2, w, h);
+}
+function enqAbrir(im) {
+  ENQ.im = im; ENQ.z = 1; ENQ.x = ENQ.y = 0; ENQ.p.clear(); $('#enq-z').value = 1; $('#dlg-retrato').close(); $('#dlg-enq').showModal(); enqDesenhar();
+}
+function enqZoom(z) { ENQ.z = Math.max(1, Math.min(4, z)); $('#enq-z').value = ENQ.z; enqDesenhar(); }
+$('#enq-z').oninput = (e) => enqZoom(+e.target.value);
+$('#enq-mais').onclick = () => enqZoom(ENQ.z + 0.25);
+$('#enq-menos').onclick = () => enqZoom(ENQ.z - 0.25);
+$('#enq-centro').onclick = () => { ENQ.x = ENQ.y = 0; enqZoom(1); };
+$('#enq-cancelar').onclick = () => $('#dlg-enq').close();
+$('#enq-ok').onclick = () => {
+  const cv = document.createElement('canvas'); cv.width = cv.height = ENQ.tam; enqDesenhar(cv, ENQ.tam);
+  $('#dlg-enq').close(); definirRetrato(cv.toDataURL('image/jpeg', 0.86)); avisar('Retrato atualizado.');
+};
+const enqCv = $('#enq-cv');
+enqCv.addEventListener('pointerdown', (e) => { enqCv.setPointerCapture(e.pointerId); ENQ.p.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (ENQ.p.size === 2) { const [a, b] = [...ENQ.p.values()]; ENQ.d0 = Math.hypot(a.x - b.x, a.y - b.y) || 1; ENQ.z0 = ENQ.z; } enqCv.classList.add('arrastando'); });
+enqCv.addEventListener('pointermove', (e) => {
+  if (!ENQ.p.has(e.pointerId)) return; const o = ENQ.p.get(e.pointerId), n = { x: e.clientX, y: e.clientY }, r = enqCv.getBoundingClientRect(); ENQ.p.set(e.pointerId, n);
+  if (ENQ.p.size === 2) { const [a, b] = [...ENQ.p.values()]; enqZoom(ENQ.z0 * Math.hypot(a.x - b.x, a.y - b.y) / ENQ.d0); } else { ENQ.x += (n.x - o.x) / r.width; ENQ.y += (n.y - o.y) / r.height; enqDesenhar(); }
+});
+const enqFim = (e) => { ENQ.p.delete(e.pointerId); if (!ENQ.p.size) enqCv.classList.remove('arrastando'); };
+enqCv.addEventListener('pointerup', enqFim); enqCv.addEventListener('pointercancel', enqFim);
+enqCv.addEventListener('wheel', (e) => { e.preventDefault(); enqZoom(ENQ.z * (e.deltaY < 0 ? 1.08 : 1 / 1.08)); }, { passive: false });
+function carregarParaEnq(src, cors) {
+  const im = new Image(); if (cors) im.crossOrigin = 'anonymous';
+  im.onload = () => enqAbrir(im); im.onerror = () => avisar('Não foi possível ler esta imagem.'); im.src = src;
+}
 $('#ret-arquivo').onchange = (e) => {
   const f = e.target.files[0]; if (!f) return;
-  const fr = new FileReader();
-  fr.onload = () => {
-    const img = new Image();
-    img.onload = () => { // reduz para caber no armazenamento do navegador
-      const k = Math.min(1, 360 / Math.max(img.width, img.height)), c = document.createElement('canvas');
-      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      definirRetrato(c.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = () => avisar('Não foi possível ler esta imagem.');
-    img.src = fr.result;
-  };
-  fr.readAsDataURL(f); e.target.value = '';
+  const fr = new FileReader(); fr.onload = () => carregarParaEnq(fr.result); fr.onerror = () => avisar('Não foi possível ler esta imagem.'); fr.readAsDataURL(f); e.target.value = '';
 };
+$('#ret-ajustar').onclick = () => { const r = db.fichas[retratoId]?.retrato; if (r) carregarParaEnq(r, !r.startsWith('data:')); };
 
 // ---------- Jornada (página 2 da ficha) ----------
 const caixas = (k, n) => `<span class="pontos caixas" data-k="${k}">` + Array.from({ length: n }, (_, i) => `<button type="button" data-v="${i + 1}" aria-label="Fadiga ${i + 1}"></button>`).join('') + '</span>';

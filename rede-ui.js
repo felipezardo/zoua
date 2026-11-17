@@ -18,6 +18,11 @@
       <ol id="rede-feed-lista" class="rede-feed-lista" aria-live="polite"></ol>
     </aside><div id="rede-toasts" class="rede-toasts" aria-live="polite"></div>`);
   const bt = $('#rede-bt');
+  // botão próprio para as rolagens da mesa (antes o ícone de sinal abria o feed e escondia a janela de conexão)
+  const fbt = document.createElement('button');
+  fbt.type = 'button'; fbt.id = 'feed-bt'; fbt.className = 'rede-bt feed-bt'; fbt.hidden = true;
+  fbt.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 20 7.4v9.2l-8 4.6-8-4.6V7.4z"/><path d="M12 2.8v18.4M4 7.4l8 4.6 8-4.6"/></svg><span class="rede-n" hidden></span>';
+  if (bt && bt.parentElement) bt.parentElement.insertBefore(fbt, bt);
 
   // ---------- feed ----------
   function itemFeed(e, animar) {
@@ -62,11 +67,14 @@
   // ---------- botão da barra e janela de conexão ----------
   function atualizarBotao() {
     if (!bt) return; const e = Rede.estado, n = Rede.presentes.size;
-    bt.dataset.estado = e; bt.querySelector('.rede-n').textContent = U.naoLidas ? String(U.naoLidas) : ''; bt.querySelector('.rede-n').hidden = !U.naoLidas;
-    const txt = e === 'conectado' ? `Sala ${Rede.sala}: ${n + 1} pessoa(s) conectada(s)` : e === 'conectando' ? 'Conectando à sala…' : 'Conectar a uma sala da mesa';
-    bt.title = txt; bt.setAttribute('aria-label', txt + (U.naoLidas ? `. ${U.naoLidas} rolagens novas` : ''));
+    bt.dataset.estado = e; const pn = bt.querySelector('.rede-n'); pn.textContent = e === 'conectado' ? String(n + 1) : ''; pn.hidden = e !== 'conectado'; pn.classList.add('pessoas');
+    const txt = e === 'conectado' ? `Sala ${Rede.sala}: ${n + 1} pessoa(s) conectada(s). Toque para ver a sala` : e === 'conectando' ? 'Conectando à sala…' : 'Conectar a uma sala da mesa';
+    bt.title = txt; bt.setAttribute('aria-label', txt);
+    fbt.hidden = e === 'desconectado' && !U.feed.length; const fn = fbt.querySelector('.rede-n'); fn.textContent = U.naoLidas ? String(U.naoLidas) : ''; fn.hidden = !U.naoLidas;
+    const ft = U.naoLidas ? `Rolagens da mesa (${U.naoLidas} novas)` : 'Rolagens da mesa'; fbt.title = ft; fbt.setAttribute('aria-label', ft);
   }
-  if (bt) bt.onclick = () => { if (Rede.conectado()) abrirFeed(); else abrirConexao(); };
+  fbt.onclick = () => abrirFeed();
+  if (bt) bt.onclick = () => abrirConexao();
   const copiar = async (t, msg) => { try { await navigator.clipboard.writeText(t); aviso(msg); } catch { aviso('Copie manualmente: ' + t); } };
   const aviso = (m) => { let el = $('#aviso'); if (!el) { el = document.createElement('div'); el.id = 'aviso'; el.setAttribute('role', 'status'); document.body.appendChild(el); } el.textContent = m; el.hidden = false; clearTimeout(aviso.t); aviso.t = setTimeout(() => { el.hidden = true; }, 4500); };
   U.aviso = aviso;
@@ -75,15 +83,17 @@
   function desenharConexao() {
     const c = $('#rede-corpo'), e = Rede.estado, ultimo = lerLS('um-anel-sala'), servidores = Rede.brokers.join('\n');
     if (e === 'conectado' || e === 'conectando') {
-      const lista = [...Rede.presentes.values()];
+      const lista = [...Rede.presentes.values()], gm = papel === 'gm';
+      const exp = [...Rede.banidos];
       c.innerHTML = `<h2 id="rede-t">Sala da mesa</h2>
         <p class="rede-codigo" aria-live="polite"><small>Código da sala</small><b>${esc(Rede.sala)}</b></p>
         <p class="nota">${e === 'conectado' ? `Conectado${Rede.broker ? ' · ' + esc(new URL(Rede.broker).host) : ''}.` : 'Conectando…'} ${esc(Rede.erro)}</p>
-        <div class="ch-acoes"><button type="button" data-rede="copiar-codigo">Copiar código</button><button type="button" class="sec" data-rede="copiar-link">Copiar link para os jogadores</button></div>
-        <h3>Na sala agora</h3><ul class="lista rede-presentes"><li><b>${esc(Rede.nome)}</b> <small>(você${papel === 'gm' ? ', Historiador' : ''})</small></li>${lista.map((p) => `<li>${esc(p.nome)} <small>${p.papel === 'gm' ? '(Historiador)' : ''}</small></li>`).join('')}</ul>
-        ${papel === 'gm' ? `<label class="cond-lbl"><input type="checkbox" id="rede-gm-visivel" ${U.gmVisivel() ? 'checked' : ''}> Mostrar minhas rolagens aos jogadores</label>` : ''}
-        <p class="nota">Tudo que passa pela sala é criptografado com o código; só quem tem o código lê.</p>
-        <div class="ch-acoes"><button type="button" class="sec perigo" data-rede="sair">Sair da sala</button></div>`;
+        <div class="ch-acoes"><button type="button" data-rede="copiar-codigo">Copiar código</button>${gm ? '<button type="button" class="sec" data-rede="copiar-link">Copiar link para os jogadores</button>' : ''}</div>
+        <h3>Na sala agora (${lista.length + 1})</h3><ul class="lista rede-presentes"><li class="rede-pessoa"><span><b>${esc(Rede.nome)}</b> <small>(você${gm ? ', Historiador' : ''})</small></span></li>${lista.map((p) => `<li class="rede-pessoa"><span>${esc(p.nome)} <small>${p.papel === 'gm' ? '(Historiador)' : ''}</small></span>${gm && p.papel !== 'gm' ? `<button type="button" class="sec perigo mini-b" data-rede="expulsar" data-id="${esc(p.id)}" title="Remover ${esc(p.nome)} da sala">Expulsar</button>` : ''}</li>`).join('')}</ul>
+        ${gm && exp.length ? `<details class="rede-expulsos"><summary>Expulsos nesta sessão (${exp.length})</summary><ul class="lista">${exp.map((id) => `<li><small>${esc(id)}</small> <button type="button" class="sec mini-b" data-rede="readmitir" data-id="${esc(id)}">Readmitir</button></li>`).join('')}</ul></details>` : ''}
+        ${gm ? `<label class="cond-lbl"><input type="checkbox" id="rede-gm-visivel" ${U.gmVisivel() ? 'checked' : ''}> Mostrar minhas rolagens aos jogadores</label>` : ''}
+        <p class="nota">Tudo que passa pela sala é criptografado com o código; só quem tem o código lê.${gm ? ' Para impedir de vez que alguém volte, crie uma sala nova (outro código).' : ''}</p>
+        <div class="ch-acoes">${gm ? '<button type="button" class="sec perigo" data-rede="encerrar">Encerrar sala para todos</button>' : '<button type="button" class="sec perigo" data-rede="sair">Sair da sala</button>'}</div>`;
     } else {
       c.innerHTML = `<h2 id="rede-t">Conectar à mesa</h2>
         <p>${papel === 'gm' ? 'Crie uma sala e passe o código (ou o link) aos jogadores. Eles veem as rolagens uns dos outros, e você acompanha as fichas em tempo real.' : 'Peça o código da sala ao Historiador. Você verá as rolagens de todos, e o Historiador acompanha sua ficha.'}</p>
@@ -102,7 +112,10 @@
     const b = e.target.closest('[data-rede]'); if (!b) return; const k = b.dataset.rede;
     if (k === 'criar') entrar(Rede.novoCodigo()); else if (k === 'retomar') entrar(lerLS('um-anel-sala')); else if (k === 'entrar') entrar($('#rede-codigo').value);
     else if (k === 'copiar-codigo') copiar(Rede.sala, 'Código copiado.'); else if (k === 'copiar-link') copiar(linkSala(), 'Link copiado. Quem abrir entra direto na sala.');
-    else if (k === 'sair') { Rede.sair(); gravarLS('um-anel-sala-auto-' + papel, ''); desenharConexao(); }
+    else if (k === 'sair') { Rede.sair(); gravarLS('um-anel-sala-auto-' + papel, ''); desenharConexao(); aviso('Você saiu da sala.'); }
+    else if (k === 'encerrar') { Rede.encerrar().then(() => { gravarLS('um-anel-sala-auto-' + papel, ''); desenharConexao(); aviso('Sala encerrada. Todos foram desconectados.'); }); }
+    else if (k === 'expulsar') { const id = b.dataset.id, p = Rede.presentes.get(id); Rede.expulsar(id).then(() => { desenharConexao(); aviso(`${p ? p.nome : 'Jogador'} foi removido da sala.`); }); }
+    else if (k === 'readmitir') { Rede.readmitir(b.dataset.id); desenharConexao(); aviso('Readmitido: ele já pode entrar de novo com o código.'); }
     else if (k === 'salvar-servidores') { const l = $('#rede-servidores').value.split('\n').map((x) => x.trim()).filter((x) => /^wss?:\/\//.test(x)); if (!l.length) return aviso('Informe ao menos um endereço ws:// ou wss://.'); Rede.brokers = l; gravarLS('um-anel-brokers', JSON.stringify(l)); aviso('Servidores salvos.'); }
   });
   document.addEventListener('change', (e) => { if (e.target.id === 'rede-gm-visivel') gravarLS('um-anel-gm-visivel', e.target.checked ? '1' : '0'); });
@@ -115,6 +128,9 @@
   Rede.on('estado', () => { atualizarBotao(); if ($('#dlg-rede').open) desenharConexao(); });
   Rede.on('presenca', () => { atualizarBotao(); if ($('#dlg-rede').open) desenharConexao(); });
   Rede.on('msg', (env) => {
+    if (papel === 'jogador' && env.p === 'gm' && (env.t === 'kick' || env.t === 'encerrar')) {
+      Rede.sair(); gravarLS('um-anel-sala-auto-jogador', ''); aviso(env.t === 'kick' ? 'O Historiador removeu você da sala.' : 'O Historiador encerrou a sala.'); if ($('#dlg-rede').open) desenharConexao(); return;
+    }
     if (env.t === 'rolagem') entrarNoFeed({ quem: env.d.nome || env.n, papel: env.p, r: env.d.r, ts: env.ts });
     (U.aoMensagem[env.t] || []).forEach((f) => f(env));
   });

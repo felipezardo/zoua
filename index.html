@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <script>try{if(localStorage.getItem("um-anel-tema")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="animacoes.css">
 </head>
 <body>
 <nav class="barra" aria-label="Navegação">
@@ -174,8 +175,15 @@
   <h3 id="ret-t">Retrato do personagem</h3>
   <label class="campo">Escolher um arquivo de imagem<input type="file" id="ret-arquivo" accept="image/*"></label>
   <label class="campo">Ou colar o endereço (link) de uma imagem<input id="ret-url" placeholder="https://..."></label>
-  <p class="nota">Arquivos são reduzidos e guardados na ficha. Links dependem da internet e podem ser bloqueados em algumas versões do site.</p>
-  <div class="dlg-botoes"><button type="button" id="ret-usar">Usar link</button><button type="button" id="ret-remover">Remover</button><button type="button" id="ret-fechar">Fechar</button></div>
+  <p class="nota">Depois de escolher o arquivo você enquadra a imagem num quadrado, com zoom. É esse enquadramento que aparece na ficha e no token da mesa.</p>
+  <div class="dlg-botoes"><button type="button" id="ret-ajustar" hidden>Reenquadrar o atual</button><button type="button" id="ret-usar">Usar link</button><button type="button" id="ret-remover">Remover</button><button type="button" id="ret-fechar">Fechar</button></div>
+</dialog>
+<dialog id="dlg-enq" aria-labelledby="enq-t" class="dlg-enq">
+  <h3 id="enq-t">Enquadrar o retrato</h3>
+  <p class="nota">Arraste a imagem para posicionar. Use o zoom (controle abaixo, roda do mouse ou dois dedos). O círculo mostra como ficará o token.</p>
+  <div class="enq-palco"><canvas id="enq-cv" width="320" height="320" aria-label="Área de enquadramento do retrato"></canvas><span class="enq-guia" aria-hidden="true"></span></div>
+  <div class="enq-zoom"><button type="button" id="enq-menos" aria-label="Menos zoom">−</button><input type="range" id="enq-z" min="1" max="4" step="0.01" value="1" aria-label="Zoom"><button type="button" id="enq-mais" aria-label="Mais zoom">+</button></div>
+  <div class="dlg-botoes"><button type="button" id="enq-centro" class="sec">Centralizar</button><button type="button" id="enq-ok">Salvar retrato</button><button type="button" id="enq-cancelar" class="sec">Cancelar</button></div>
 </dialog>
 <dialog id="dlg-sombra" aria-labelledby="s-t">
   <h3 id="s-t">Sombra e Esperança</h3>
@@ -210,6 +218,7 @@
 <script src="rede.js"></script>
 <script src="rede-ui.js"></script>
 <script src="rede-ficha.js"></script>
+<script src="musica.js"></script>
 <script src="visor.js"></script>
 <script src="cena-jogador.js"></script>
 </body>

@@ -1,0 +1,119 @@
+/* ============ Complemento visual: hovers, animações, conexão, retrato quadrado e música ============ */
+/* Carregado depois de style.css (e de mesa.css). Hovers só com mouse; animações respeitam "reduzir movimento". */
+:root{--ease:cubic-bezier(.2,.7,.2,1);--brilho:0 0 0 3px rgba(179,50,44,.22)}
+
+/* ---------- retrato sempre quadrado ---------- */
+.retrato,.card-retrato{aspect-ratio:1/1!important;max-height:none}
+.retrato{width:min(100%,14rem);margin-inline:auto}
+.card-retrato{max-height:none!important}
+.retrato,.card-retrato{position:relative;transition:transform .2s var(--ease),box-shadow .2s,border-color .2s}
+.retrato::after{content:"Trocar / enquadrar";position:absolute;inset:auto 0 0 0;padding:.25rem;background:linear-gradient(transparent,#000a);color:#fff;font:600 .72rem var(--titulo);text-align:center;opacity:0;transform:translateY(100%);transition:opacity .2s,transform .25s var(--ease);pointer-events:none}
+@media (hover:hover){.retrato:hover{box-shadow:0 4px 14px #0004;border-color:var(--tinta)}.retrato:hover::after,.retrato:focus-visible::after{opacity:1;transform:none}.retrato:hover img{transform:scale(1.04)}}
+.retrato img{transition:transform .35s var(--ease)}
+
+/* ---------- editor de enquadramento ---------- */
+.dlg-enq{max-width:min(24rem,94vw);text-align:center}
+.enq-palco{position:relative;width:min(320px,100%);aspect-ratio:1/1;margin:.6rem auto;border:2px solid var(--tinta);background:#d9cbab;touch-action:none;overflow:hidden}
+.enq-palco canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+.enq-palco canvas.arrastando{cursor:grabbing}
+.enq-guia{position:absolute;inset:0;pointer-events:none;border-radius:50%;box-shadow:0 0 0 999px rgba(30,20,12,.55);outline:2px dashed #fff8e8;outline-offset:-2px;animation:enq-pulso 2.4s ease-in-out infinite}
+@keyframes enq-pulso{50%{outline-color:rgba(255,248,232,.45)}}
+.enq-zoom{display:flex;align-items:center;gap:.5rem;justify-content:center;margin:.3rem 0 .6rem}
+.enq-zoom input{width:11rem;accent-color:var(--tinta);border:0}
+.enq-zoom button{width:2.1rem;height:2.1rem;border-radius:50%;border:1.5px solid var(--tinta);background:transparent;color:var(--tinta);font:700 1.1rem/1 var(--titulo);cursor:pointer;padding:0}
+@media (hover:hover){.enq-zoom button:hover{background:var(--tinta);color:var(--sobre-tinta);transform:scale(1.08)}}
+.dlg-enq .dlg-botoes{justify-content:center}
+#enq-centro,#enq-cancelar{background:transparent;color:var(--tinta);border:1.5px solid var(--tinta)}
+
+/* ---------- barra: botões redondos (sala, rolagens, música) ---------- */
+.barra .rede-bt{transition:background .15s,transform .15s var(--ease),box-shadow .2s}
+@media (hover:hover){.barra .rede-bt:hover{transform:translateY(-1px) scale(1.06);box-shadow:0 3px 8px #0006}}
+.barra .rede-bt svg{transition:transform .35s var(--ease)}
+@media (hover:hover){.barra .rede-bt:hover svg{transform:rotate(-8deg) scale(1.08)}.feed-bt:hover svg{transform:rotate(60deg) scale(1.08)!important}}
+.barra .feed-bt[hidden]{display:none}
+.rede-n{animation:surgir .25s var(--ease)}
+.rede-n.pessoas{background:#2c6b2f}
+.musica-bt.ativo{background:#ffffff26;border-color:#fff}
+.musica-bt.ativo svg{animation:musica-balanca 1.6s ease-in-out infinite}
+.musica-bt .rede-dot{display:none}
+@keyframes musica-balanca{0%,100%{transform:rotate(0)}50%{transform:rotate(-10deg) scale(1.1)}}
+@keyframes surgir{from{opacity:0;transform:translateY(6px) scale(.9)}to{opacity:1;transform:none}}
+
+/* ---------- janela da sala ---------- */
+.rede-pessoa{display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:.2rem .3rem;border-radius:6px;transition:background .15s}
+@media (hover:hover){.rede-pessoa:hover{background:#b3322c12}}
+#dlg-rede button.mini-b,.mini-b{padding:.15rem .55rem!important;font-size:.72rem!important}
+#dlg-rede button:not(:disabled),.rede-feed button{transition:background .15s,color .15s,transform .12s var(--ease),box-shadow .15s,filter .15s}
+@media (hover:hover){#dlg-rede button:not(.sec):hover,.rede-feed button:hover{filter:brightness(1.12);box-shadow:0 2px 6px #0003}#dlg-rede button.sec:hover{background:var(--tinta);color:var(--sobre-tinta)}#dlg-rede button.perigo:hover{background:#8a2a24;color:#fff;border-color:#8a2a24}}
+#dlg-rede button:active,.rede-feed button:active{transform:translateY(1px) scale(.98)}
+.rede-codigo b{letter-spacing:.14em;transition:letter-spacing .25s var(--ease)}
+.rede-codigo:hover b{letter-spacing:.2em}
+.rede-expulsos summary{cursor:pointer;margin:.4rem 0}
+.rede-feed{animation:subir-feed .25s var(--ease)}
+@keyframes subir-feed{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.feed-item{animation:surgir .3s var(--ease)}
+.feed-item.sem-anim{animation:none}
+.rede-toast{animation:surgir .3s var(--ease);transition:transform .15s var(--ease),box-shadow .15s}
+@media (hover:hover){.rede-toast:hover{transform:translateY(-2px);box-shadow:0 4px 12px #0004}}
+
+/* ---------- Mesa do Historiador: cartões, tokens, abas, paleta ---------- */
+.card-heroi,.card-adv{transition:transform .2s var(--ease),box-shadow .2s,border-color .2s}
+@media (hover:hover){.card-heroi:hover,.card-adv:hover{transform:translateY(-2px);box-shadow:0 6px 16px #0003;border-color:var(--tinta)}}
+.card-heroi,.card-adv,.lane,.zona,.pal-item{animation:surgir .3s var(--ease) both}
+.tk-anel{transition:background .3s,transform .2s var(--ease)}
+@media (hover:hover){.token:hover .tk-anel{transform:scale(1.06)}}
+.token.arrastando{transform:scale(.96) rotate(-2deg)}
+.lane,.zona{transition:background .2s,box-shadow .2s,outline-color .2s}
+.lane.sobre,.zona.sobre{box-shadow:inset 0 0 0 3px var(--tinta),0 0 14px rgba(179,50,44,.35);animation:alvo-pulso .9s ease-in-out infinite}
+@keyframes alvo-pulso{50%{box-shadow:inset 0 0 0 3px var(--tinta),0 0 22px rgba(179,50,44,.55)}}
+.pal-item{transition:background .15s,transform .15s var(--ease),box-shadow .15s}
+@media (hover:hover){.pal-item:hover{transform:translateX(3px);box-shadow:0 2px 8px #0003}}
+.cond-btn,.chip-cat,.grupo-b button{transition:background .15s,color .15s,transform .12s var(--ease),box-shadow .15s}
+@media (hover:hover){.cond-btn:hover,.chip-cat:hover{transform:translateY(-1px);box-shadow:0 2px 6px #0003}}
+.cond-btn.on,.chip-cat.on{animation:pop .25s var(--ease)}
+@keyframes pop{from{transform:scale(.9)}to{transform:none}}
+.mesa-topo .acoes button{transition:background .15s,transform .15s var(--ease),box-shadow .15s}
+.vista:not([hidden]){animation:vista-entra .28s var(--ease)}
+@keyframes vista-entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#vista-jornada:not([hidden]),#vista-cenas:not([hidden]),#vista-ficha:not([hidden]),#hub:not([hidden]){animation:vista-entra .28s var(--ease)}
+.barra .abas button{position:relative}
+.barra .abas button::after{content:"";position:absolute;left:20%;right:20%;bottom:2px;height:2px;background:currentColor;transform:scaleX(0);transition:transform .25s var(--ease)}
+@media (hover:hover){.barra .abas button:not(.on):hover::after{transform:scaleX(1)}}
+.stp button{transition:background .15s,color .15s,transform .12s var(--ease)}
+@media (hover:hover){.stp button:hover{transform:scale(1.12)}}
+.res-card.nova{animation:subir-feed .35s var(--ease)}
+.dado{transition:transform .2s var(--ease)}
+@media (hover:hover){.dado:hover{transform:translateY(-3px) rotate(-4deg)}}
+.hub-grade .card-ficha{animation:surgir .35s var(--ease) both}
+.hub-grade .card-ficha:nth-child(2){animation-delay:.04s}.hub-grade .card-ficha:nth-child(3){animation-delay:.08s}.hub-grade .card-ficha:nth-child(4){animation-delay:.12s}
+
+/* ---------- player de música ---------- */
+.musica-mini{position:fixed;right:.8rem;bottom:.8rem;z-index:8;display:flex;align-items:center;gap:.5rem;max-width:min(24rem,calc(100vw - 1.6rem));padding:.4rem .6rem;background:var(--barra);color:var(--barra-t);border:2px solid var(--tinta);border-radius:999px;box-shadow:0 4px 14px #0006;animation:subir-feed .3s var(--ease)}
+.musica-mini[hidden]{display:none}
+.musica-mini button{font:700 .8rem var(--titulo);background:transparent;color:inherit;border:1.5px solid currentColor;border-radius:50%;min-width:2rem;height:2rem;padding:0 .35rem;cursor:pointer;transition:background .15s,color .15s,transform .12s var(--ease)}
+.musica-mini #musica-ativar{border-radius:999px;background:var(--tinta);border-color:var(--tinta);color:var(--sobre-tinta);padding:0 .7rem;animation:alvo-pulso 1.2s infinite}
+@media (hover:hover){.musica-mini button:hover{background:var(--barra-t);color:var(--barra);transform:scale(1.08)}}
+.musica-mini button:active{transform:scale(.94)}
+.mm-corpo{display:flex;align-items:center;gap:.5rem;min-width:0;flex:1}
+.mm-titulo{font:600 .82rem var(--titulo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:9rem}
+.mm-ctl{display:flex;align-items:center;gap:.3rem}
+.mm-ctl input[type=range]{width:5.5rem;border:0;accent-color:var(--tinta);padding:0}
+.mm-yt{position:absolute;left:0;bottom:0;width:160px;height:90px;opacity:.01;pointer-events:none;z-index:-1;overflow:hidden}
+.musica-mini.min .mm-corpo{display:none}
+.musica-mini.min{padding:.3rem}
+.musica-mini.tocando #musica-min{animation:musica-balanca 1.6s ease-in-out infinite}
+@media (max-width:560px){.musica-mini{right:.4rem;left:.4rem;bottom:.4rem;max-width:none}.musica-mini.min{left:auto}.mm-titulo{max-width:5.5rem}.mm-ctl input[type=range]{width:4rem}}
+.mus-agora{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;padding:.5rem .7rem;margin:.4rem 0;border:1.5px solid var(--tinta);border-radius:8px;background:var(--campo)}
+.mus-eq{display:inline-flex;align-items:flex-end;gap:2px;height:1.1rem}
+.mus-eq i{display:block;width:4px;height:30%;background:var(--tinta);border-radius:2px}
+.mus-eq.on i{animation:eq .9s ease-in-out infinite}.mus-eq.on i:nth-child(2){animation-delay:.2s}.mus-eq.on i:nth-child(3){animation-delay:.4s}
+@keyframes eq{0%,100%{height:25%}50%{height:100%}}
+.mus-lib li{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.2rem .3rem;border-radius:6px;transition:background .15s}
+@media (hover:hover){.mus-lib li:hover{background:#b3322c12}}
+#dlg-musica button{font:600 .85rem var(--titulo);background:var(--tinta);color:var(--sobre-tinta);border:1.5px solid var(--tinta);border-radius:4px;padding:.4rem .85rem;cursor:pointer;transition:background .15s,color .15s,transform .12s var(--ease),filter .15s}
+#dlg-musica button.sec{background:transparent;color:var(--tinta)}
+#dlg-musica button.perigo{border-color:#8a2a24;color:#8a2a24;background:transparent}
+@media (hover:hover){#dlg-musica button:not(.sec):not(.perigo):hover{filter:brightness(1.12)}#dlg-musica button.sec:hover{background:var(--tinta);color:var(--sobre-tinta)}#dlg-musica button.perigo:hover{background:#8a2a24;color:#fff}}
+#dlg-musica button:active{transform:translateY(1px)}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

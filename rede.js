@@ -37,6 +37,7 @@
   const ouvintes = {};
   const R = {
     estado: 'desconectado', erro: '', sala: '', papel: 'jogador', nome: '', id: aleat(5), broker: '', presentes: new Map(),
+    banidos: new Set(),
     brokers: (() => { try { const l = JSON.parse(localStorage.getItem('um-anel-brokers') || 'null'); if (Array.isArray(l) && l.length) return l; } catch {} return window.REDE_BROKERS || BROKERS_PADRAO; })(),
     novoCodigo, formatar, normalizar,
     conectado() { return this.estado === 'conectado'; },
@@ -78,6 +79,7 @@
     }
     let env; try { env = await decifrar(s); } catch { return; } // outra sala ou mensagem corrompida
     if (!env || env.v !== 1 || env.de === R.id || vistos.has(env.i)) return;
+    if (R.banidos.has(env.de)) return; // expulso pelo Historiador: ignorado até ser readmitido
     vistos.add(env.i); if (vistos.size > 400) vistos.delete(vistos.values().next().value);
     if (env.para && env.para !== R.id && env.para !== '*') return;
     if (env.t === 'oi' || env.t === 'tchau') { tratarPresenca(env); }
@@ -122,6 +124,10 @@
     clearInterval(hb); hb = setInterval(() => { if (R.conectado()) anunciar(false); const lim = Date.now() - 110000; let mudou = false; R.presentes.forEach((p, k) => { if (p.visto < lim) { R.presentes.delete(k); mudou = true; } }); if (mudou) emitir('presenca', R.presentes); }, 40000);
   };
   R.sair = () => { deve = false; clearInterval(hb); clearInterval(ping); if (ws && ws.readyState === 1) { try { enviar('tchau', {}); setTimeout(() => ws && ws.close(), 150); } catch { ws.close(); } } else if (ws) ws.close(); R.presentes = new Map(); mudar('desconectado'); };
+  // Historiador: expulsa um jogador (ele recebe o aviso, sai da sala e não volta a ser ouvido até ser readmitido)
+  R.expulsar = async (id) => { R.banidos.add(id); R.presentes.delete(id); emitir('presenca', R.presentes); try { await enviar('kick', {}, id); } catch {} };
+  R.readmitir = (id) => { R.banidos.delete(id); emitir('presenca', R.presentes); };
+  R.encerrar = async () => { try { await enviar('encerrar', {}); } catch {} await espera(250); R.sair(); };
   R.renomear = (nome) => { R.nome = nome; if (R.conectado()) anunciar(false); };
   window.Rede = R;
 })();
