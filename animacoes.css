@@ -151,7 +151,7 @@
 .fila-topo h3{margin:0}
 .mus-add{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:.3rem 0}
 .mus-add input[type=text],.mus-add input:not([type]),.fila-add input{flex:1 1 11rem;min-width:8rem}
-.mus-add button,.btn-arq,.fila-add button,#cena-proj{font:600 .85rem var(--titulo);background:transparent;color:var(--tinta);border:1.5px solid var(--tinta);border-radius:4px;padding:.4rem .8rem;cursor:pointer;transition:background .15s,color .15s,transform .12s var(--ease),box-shadow .15s;display:inline-block}
+.mus-add button,.btn-arq,.fila-add button{font:600 .85rem var(--titulo);background:transparent;color:var(--tinta);border:1.5px solid var(--tinta);border-radius:4px;padding:.4rem .8rem;cursor:pointer;transition:background .15s,color .15s,transform .12s var(--ease),box-shadow .15s;display:inline-block}
 @media (hover:hover){.mus-add button:not(:disabled):hover,.btn-arq:hover,.fila-add button:hover{background:var(--tinta);color:var(--sobre-tinta);transform:translateY(-1px);box-shadow:0 2px 6px #0003}}
 .mus-add button:disabled{opacity:.4;cursor:not-allowed}
 .mus-add button:active,.btn-arq:active{transform:translateY(1px)}
@@ -177,3 +177,29 @@
 @media (hover:hover){.mus-faixa:not(.on) .mus-play:hover{background:var(--tinta)!important;color:var(--sobre-tinta)!important}}
 .mus-faixa .mus-x{background:transparent!important;color:var(--tinta)!important;border:0!important;box-shadow:none!important;min-height:0}
 .mus-faixa .mus-x:hover{color:#8a2a24!important}
+
+/* ---------- Jornada na Mesa do Historiador: o estilo global de botão da Mesa não pode vazar para a ficha ---------- */
+#jornada-gm .pontos button{width:13px;height:13px;margin:2px;padding:0;min-height:0;border:1.5px solid var(--tinta);border-radius:0;background:transparent;color:inherit;transform:rotate(45deg);cursor:pointer;font-size:0}
+#jornada-gm .pontos button.on{background:var(--tinta)}
+#jornada-gm .comp-linha .pontos.caixas button{width:.8rem;height:.8rem;margin:0}
+@media (hover:hover){#jornada-gm .pontos button:hover{background:rgba(179,50,44,.3);transform:rotate(45deg) scale(1.22)}#jornada-gm .pontos button.on:hover{background:var(--tinta)}}
+#jornada-gm .mapa-barra button{font:600 .85rem var(--titulo);background:transparent;color:var(--tinta);border:1.5px solid var(--tinta);border-radius:999px;padding:.3rem .8rem;min-height:2.2rem}
+#jornada-gm .mapa-barra button[aria-checked="true"],#jornada-gm .mapa-barra button[aria-pressed="true"]{background:var(--tinta);color:var(--sobre-tinta)}
+#jornada-gm .mapa-olho{width:2.4rem;height:2.4rem;padding:0;border-radius:50%;border:1.5px solid rgba(42,28,20,.5);background:rgba(242,233,212,.6);color:#2a1c14;min-height:0}
+.jor-nota{margin:.4rem 0 .8rem}
+
+/* ---------- ataque pelo token ---------- */
+.cena-atq{margin:.5rem 0;padding:.6rem .8rem;border:1.5px solid var(--tinta);border-radius:10px;background:var(--campo);animation:surgir .25s var(--ease) both}
+.cena-atq[hidden]{display:none}
+.cena-atq h4{margin:0 0 .4rem;font:700 .95rem var(--titulo);color:var(--tinta)}
+.atq-armas{display:flex;flex-wrap:wrap;gap:.4rem}
+.atq-arma{display:inline-flex;flex-direction:column;align-items:flex-start;gap:.1rem;padding:.4rem .7rem;font:600 .85rem var(--titulo);background:transparent!important;color:var(--tinta)!important;border:1.5px solid var(--tinta)!important;border-radius:8px;cursor:pointer;transition:background .15s,color .15s,transform .12s var(--ease),box-shadow .15s}
+.atq-arma small{font:400 .72rem var(--corpo);opacity:.8}
+@media (hover:hover){.atq-arma:hover{background:var(--tinta)!important;color:var(--sobre-tinta)!important;transform:translateY(-2px);box-shadow:0 3px 8px #0003}}
+.atq-msg{display:flex;align-items:center;gap:.5rem;margin:.2rem 0}
+.atq-pulso{width:.7rem;height:.7rem;border-radius:50%;background:#b3322c;animation:alvo-pulso 1s ease-in-out infinite}
+.ataque-fila{position:fixed;top:4.2rem;right:.8rem;z-index:20;display:grid;gap:.5rem;width:min(21rem,calc(100vw - 1.6rem))}
+.atq-card{padding:.7rem .9rem;background:var(--campo,#f6efdd);color:var(--tinta);border:2px solid var(--tinta);border-radius:10px;box-shadow:0 6px 18px #0005;animation:subir-feed .25s var(--ease)}
+.atq-card p{margin:0 0 .2rem}
+.atq-acoes{display:flex;gap:.5rem;margin-top:.5rem}
+.atq-acoes button{flex:1}

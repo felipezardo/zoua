@@ -74,6 +74,7 @@
     desenhar();
   }
   carregar(0);
+  if (document.body.dataset.papel !== 'gm') olho.remove(); // só o Historiador alterna para o mapa dele; jogadores sempre veem o mapa dos jogadores
 
   const kMin = () => Math.min(vw / IMG_W, vh / IMG_H);
   function limitar() {
@@ -127,6 +128,7 @@
     const pl = (v) => `${v} hexágono${v === 1 ? '' : 's'}`;
     document.getElementById('mapa-contagem').textContent = `Percurso: ${pl(n[1])}. Perigo: ${pl(n[2])}. Abrigo: ${pl(n[3])}.`;
   }
+  window.mapaAtualizar = () => { contar(); desenhar(); }; // marcas alteradas por outra pessoa da sala
   window.renderMapa = () => { if (modo !== 0) trocarMapa(0); iniciado = false; ajustarTamanho(); contar(); }; // sempre abre no mapa dos jogadores
   function ajustarTamanho() {
     const r = area.getBoundingClientRect(); if (!r.width || !r.height) return;

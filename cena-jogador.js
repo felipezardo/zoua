@@ -9,10 +9,49 @@
   RedeUI.feedVisivel = () => !$('#vista-cenas').hidden;
   RedeUI.montarFeed($('#cena-feed'));
 
+  // ---------- ataque a partir do token: escolhe a arma, o Historiador autoriza, a rolagem sai com a sua ficha ----------
+  let atq = null, selTok = null; // atq: { rid, tokenId, i, alvo, estado: 'esperando' | 'rolando' }
+  const caixaAtq = document.createElement('div'); caixaAtq.id = 'cena-atq'; caixaAtq.className = 'cena-atq'; caixaAtq.setAttribute('aria-live', 'polite');
+  $('#cena-info').insertAdjacentElement('afterend', caixaAtq);
+  const armas = () => (typeof armaAtual === 'function' ? [0, 1, 2, 3].map((i) => [i, armaAtual(i)]).filter(([, a]) => a) : []);
+  function pintarAtq() {
+    const t = selTok && cena && cena.tokens.find((x) => x.id === selTok);
+    if (!t || t.tp !== 'a' || t.fora || !Rede.conectado() || !gmId) { caixaAtq.hidden = true; caixaAtq.innerHTML = ''; return; }
+    caixaAtq.hidden = false;
+    if (atq && atq.tokenId === t.id) {
+      caixaAtq.innerHTML = atq.estado === 'esperando' ? `<p class="atq-msg"><span class="atq-pulso" aria-hidden="true"></span>Aguardando o Historiador autorizar o ataque a <b>${esc(t.nome)}</b>…</p><button type="button" class="sec" data-atq="cancelar">Cancelar</button>` : `<p class="atq-msg">Rolando o ataque a <b>${esc(t.nome)}</b>…</p>`;
+      return;
+    }
+    const ar = armas();
+    caixaAtq.innerHTML = `<h4>Atacar ${esc(t.nome)}</h4>` + (ar.length ? `<div class="atq-armas">${ar.map(([i, a]) => `<button type="button" class="atq-arma" data-atq="arma" data-i="${i}"><b>${esc(a.n)}</b><small>Dano ${a.d} · Ferimento ${a.f}</small></button>`).join('')}</div><p class="nota">Usa as armas e os valores da sua ficha. O Historiador precisa autorizar a rolagem; o dano é aplicado ao acertar.</p>` : '<p class="nota">Escolha uma arma na sua ficha (seção de combate) para poder atacar.</p>');
+  }
+  caixaAtq.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-atq]'); if (!b) return;
+    if (b.dataset.atq === 'cancelar') { if (atq) Rede.enviar('ataque-cancelar', { rid: atq.rid }, gmId); atq = null; return pintarAtq(); }
+    const t = cena && cena.tokens.find((x) => x.id === selTok), i = +b.dataset.i, a = armaAtual(i); if (!t || !a || atq) return;
+    atq = { rid: Math.random().toString(36).slice(2, 9), tokenId: t.id, i, alvo: t.nome, estado: 'esperando' };
+    Rede.enviar('ataque-pedir', { rid: atq.rid, tokenId: t.id, alvo: t.nome, arma: a.n, heroi: (typeof state !== 'undefined' && state.nome) || 'Jogador' }, gmId); pintarAtq();
+  });
+  RedeUI.on('ataque-ok', (env) => {
+    const d = env.d || {}; if (!atq || d.rid !== atq.rid) return; atq.estado = 'rolando'; pintarAtq();
+    const bt = document.querySelector(`.atacar[data-i="${atq.i}"]`); if (!bt) { atq = null; return pintarAtq(); }
+    bt.click(); const m = document.querySelector('#r-mod'); if (m) m.value = d.bloqueio || 0; // Bloqueio do adversário soma ao NA
+    document.querySelector('#r-rolar').click();
+  });
+  RedeUI.on('ataque-negado', (env) => { const d = env.d || {}; if (!atq || d.rid !== atq.rid) return; atq = null; pintarAtq(); RedeUI.aviso(d.motivo || 'O Historiador não autorizou este ataque.'); });
+  RedeUI.on('ataque-aplicado', (env) => { if (env.d && env.d.texto) RedeUI.aviso(env.d.texto); });
+  // a rolagem normal da ficha avisa quando um ataque termina: manda o resultado ao Historiador, que aplica dano e ferimento
+  window.aoAtaqueRolado = (r) => {
+    if (!atq || atq.estado !== 'rolando') return; const a = r.arma || {};
+    Rede.enviar('ataque-resultado', { rid: atq.rid, tokenId: atq.tokenId, heroi: (typeof state !== 'undefined' && state.nome) || 'Jogador', arma: a.n, dano: a.d, ferim: a.f, ok: !!r.ok, grau: r.grau, icones: r.icones || 0, pesado: r.atq ? r.atq.pesado : 0, perf: !!(r.atq && r.atq.perf) }, gmId);
+    atq = null; setTimeout(pintarAtq, 0);
+  };
+
   function info(id) {
-    const t = cena && cena.tokens.find((x) => x.id === id), el = $('#cena-info'); if (!t) { el.textContent = ''; return; }
+    selTok = id;
+    const t = cena && cena.tokens.find((x) => x.id === id), el = $('#cena-info'); if (!t) { el.textContent = ''; pintarAtq(); return; }
     const partes = [`${t.nome}`]; if (t.res != null) partes.push(`Resistência ${t.res}/${t.resMax}`); if (t.fora) partes.push('fora de combate'); if (t.estados?.length) partes.push(t.estados.join(', '));
-    el.textContent = partes.join(' · ');
+    el.textContent = partes.join(' · '); pintarAtq();
   }
   const tentativas = new Map(), parciais = new Map();
   function pedir(keys) {
@@ -59,7 +98,7 @@
   Rede.on('estado', avisoConexao); avisoConexao();
 
   RedeUI.on('cena', (env) => {
-    gmId = env.de; const nova = !cena || cena.id !== env.d.id; cena = env.d; aplicar(); avisoConexao();
+    gmId = env.de; const nova = !cena || cena.id !== env.d.id; cena = env.d; aplicar(); avisoConexao(); pintarAtq();
     const marca = JSON.stringify([env.d.id, env.d.fundo]); if (marca !== ultimaCena) { ultimaCena = marca; if ($('#vista-cenas').hidden) RedeUI.aviso('O Historiador mostrou uma cena. Abra a aba Cenas.'); }
   });
   RedeUI.on('cena-img', (env) => { imgs.set(env.d.key, env.d.src); aplicar(); });

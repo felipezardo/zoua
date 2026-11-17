@@ -487,11 +487,11 @@ $('#r-rolar').onclick = () => {
   if (magico) chips.push('Sucesso Mágico (1 Esperança)');
   if (exausto) chips.push('Exausto'); if (arrasado) chips.push('Arrasado');
   if (bonus) chips.push(`Bônus ${bonus > 0 ? '+' : '−'}${Math.abs(bonus)}`);
-  let extra = null;
+  let extra = null; rolCtx.atq = null;
   if (rolCtx.tipo === 'ataque' && ok && rolCtx.arma) {
     const a = rolCtx.arma, mi = tem('maos'), pesado = (num('forca_nivel') || 0) + (mi ? 1 : 0) + (a.duas ? 1 : 0), IC = icoSucesso();
     const maos = a.duas ? ' (já inclui +1 por usar duas mãos)' : a.m === 12 ? ' (+1 se empunhar com duas mãos)' : '';
-    const perf = !olho && a.n !== 'Desarmado' && (runa || fac >= (a.afiada ? 9 : 10));
+    const perf = !olho && a.n !== 'Desarmado' && (runa || fac >= (a.afiada ? 9 : 10)); rolCtx.atq = { pesado, perf };
     const ch = [{ html: `Perda de Resistência: <b>${a.d}</b>` }];
     if (icones) ch.push({ html: `${icones} ${IC}: Golpe Pesado +${pesado} por ícone${maos}` });
     if (perf) ch.push({ alerta: true, html: `Golpe Perfurante! PROTEÇÃO contra Ferimento <b>${a.f}</b>` });
@@ -505,6 +505,7 @@ $('#r-rolar').onclick = () => {
   mostrarRolagem({ nome: $('#r-alvo').textContent.replace(/ \(Favorecida\)$/, ''), grau, ok, magico, na, total, bonus, f, fac, modo, suc, exausto, arrasado, runa, olho, icones, chips, extra,
     nota: insp && !gastou ? 'Inspirado só tem efeito ao gastar Esperança.' : '' });
   $('#r-esp').checked = false;
+  if (rolCtx.tipo === 'ataque' && window.aoAtaqueRolado) window.aoAtaqueRolado({ ok, grau, icones, olho, runa, arma: rolCtx.arma, atq: rolCtx.atq }); // usado pelo ataque a partir do token da cena
   aplicar(); salvar();
 };
 

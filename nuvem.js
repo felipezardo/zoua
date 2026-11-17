@@ -48,5 +48,8 @@
     } catch (e) { N.erro = String((e && e.message) || e); console.warn('[nuvem] não leu o áudio:', N.erro); return null; }
   };
   N.limpar = async (sala) => { enviadas.clear(); if (!iniciar() || !sala) return; try { await comTempo(DB.ref(raiz(sala)).remove(), 8000); } catch {} };
+  // usados pela sala (rede.js) quando o Firebase carrega as mensagens
+  N.db = () => (iniciar() ? DB : null);
+  N.caminho = (sala) => (window.FIREBASE_PREFIXO || 'um-anel/salas/') + limpa(sala);
   window.Nuvem = N;
 })();

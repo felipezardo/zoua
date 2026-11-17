@@ -137,23 +137,7 @@ $('#ret-ajustar').onclick = () => { const r = db.fichas[retratoId]?.retrato; if 
 const caixas = (k, n) => `<span class="pontos caixas" data-k="${k}">` + Array.from({ length: n }, (_, i) => `<button type="button" data-v="${i + 1}" aria-label="Fadiga ${i + 1}"></button>`).join('') + '</span>';
 const campo = (rot, k, extra = '') => `<label class="campo">${rot}<input data-k="${k}" ${extra}></label>`;
 function montarJornada() {
-  const L7 = [0, 1, 2, 3, 4, 5, 6];
-  $('#vista-jornada').innerHTML = `
-  <header class="topo"><h2 class="titulo-pagina">Jornada</h2></header>
-  <div class="jor-cima">
-    <section><h3>Registro de Jornada</h3>${campo('Ano', 'j_ano')}${campo('Estação', 'j_estacao')}${campo('Jornada de', 'j_de')}${campo('Destino', 'j_destino')}${campo('Dias de viagem', 'j_dias', 'type="number" min="0"')}</section>
-    <section><h3>A Companhia</h3><div class="comp-cab"><span>Nome</span><span>Papel de Jornada</span><span>Fadiga de Viagem</span></div>
-      ${L7.map(i => `<div class="comp-linha"><input data-k="c${i}_nome" aria-label="Nome ${i + 1}"><input list="papeis" data-k="c${i}_papel" aria-label="Papel de Jornada ${i + 1}">${caixas('c' + i + '_fad', 10)}</div>`).join('')}
-      <datalist id="papeis"><option>Guia</option><option>Batedor</option><option>Caçador</option><option>Vigia</option></datalist></section>
-    <section><h3>Pôneis e Cavalos</h3><div class="pon-cab"><span>Nome</span><span>Vigor</span></div>
-      ${L7.map(i => `<div class="pon-linha"><input data-k="p${i}_nome" aria-label="Nome do animal ${i + 1}"><input type="number" min="0" data-k="p${i}_vigor" aria-label="Vigor ${i + 1}"></div>`).join('')}</section>
-    <section><h3>Diário</h3><textarea data-k="diario" rows="10" aria-label="Diário"></textarea></section>
-  </div>
-  <div class="jor-baixo">
-    <section class="mapa-box"><h3>Caminho da Jornada</h3><div id="mapa-app"></div></section>
-    <section class="eventos"><h3>Eventos</h3>
-      ${[1,2,3,4,5,6].map(n => `<fieldset><legend>Evento ${n}</legend>${campo('Alvo', 'e' + n + '_alvo')}${campo('Evento', 'e' + n + '_evento')}${campo('Resultado', 'e' + n + '_res')}</fieldset>`).join('')}</section>
-  </div>`;
+  $('#vista-jornada').innerHTML = Jornada.html();
 }
 montarJornada();
 

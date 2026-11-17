@@ -57,12 +57,27 @@
   async function cifrar(obj) { const iv = crypto.getRandomValues(new Uint8Array(12)), ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, chave, enc.encode(JSON.stringify(obj)))); return b64(juntar([iv, ct])); }
   async function decifrar(s) { const raw = desb64(s), pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: raw.slice(0, 12) }, chave, raw.slice(12)); return JSON.parse(dec.decode(pt)); }
 
-  function publicarBruto(texto) { if (!ws || ws.readyState !== 1) return false; const corpo = juntar([strM(topico), enc.encode(texto)]); ws.send(pacote(0x30, corpo)); return true; }
+  // ---------- transporte Firebase (padrão quando disponível; se falhar, volta para o MQTT) ----------
+  let fb = null;
+  function abrirFirebase() {
+    const DB = window.Nuvem && Nuvem.db && Nuvem.db(); if (!DB || localStorage.getItem('um-anel-transporte') === 'mqtt') return false;
+    const msgs = DB.ref(Nuvem.caminho(R.sala) + '/msgs'), info = DB.ref('.info/connected'), entrada = Date.now(); let falhou = false;
+    R.broker = (window.FIREBASE_CONFIG && FIREBASE_CONFIG.databaseURL) || 'https://firebaseio.com'; mudar('conectando');
+    const fechar = () => { try { msgs.off(); info.off(); } catch {} if (fb && fb.msgs === msgs) fb = null; };
+    const onInfo = (sn) => { if (!deve || falhou) return; if (sn.val()) { if (!R.conectado()) { tentativa = 0; mudar('conectado'); anunciar(true); } } else if (R.conectado()) mudar('conectando', 'Conexão perdida. Tentando de novo…'); };
+    const onAdd = (sn) => { const v = sn.val(); if (!v || typeof v.t !== 'string') return; if ((v.ts || 0) < entrada - 8000) return; receber(v.t); };
+    const onErr = () => { if (falhou || !deve) return; falhou = true; fechar(); console.warn('[rede] Firebase recusou a conexão; usando MQTT.'); abrir(); }; // regras do banco ou erro: volta para o MQTT
+    fb = { msgs, fechar }; info.on('value', onInfo); msgs.on('child_added', onAdd, onErr);
+    return true;
+  }
+  function publicarBruto(texto) {
+    if (fb) { try { fb.msgs.push({ t: texto, ts: Date.now() }).then((r) => setTimeout(() => { try { r.remove(); } catch {} }, 30000)).catch(() => {}); return true; } catch { return false; } }
+    if (!ws || ws.readyState !== 1) return false; const corpo = juntar([strM(topico), enc.encode(texto)]); ws.send(pacote(0x30, corpo)); return true; }
   async function enviar(t, d, para) {
     if (!R.conectado()) return false;
     const env = { v: 1, i: aleat(6), de: R.id, n: R.nome, p: R.papel, t, d, para: para || null, ts: Date.now() };
     const s = await cifrar(env);
-    if (s.length <= TAM_PARTE) return publicarBruto(s);
+    if (fb || s.length <= TAM_PARTE) return publicarBruto(s);
     const id = aleat(4), total = Math.ceil(s.length / TAM_PARTE);
     for (let k = 0; k < total; k++) { publicarBruto(`P|${id}|${k}|${total}|${s.slice(k * TAM_PARTE, (k + 1) * TAM_PARTE)}`); if (k % 4 === 3) await espera(20); }
     return true;
@@ -120,10 +135,10 @@
     if (deve) R.sair();
     if (!crypto?.subtle) throw new Error('Este navegador/página não permite criptografia (use https ou localhost).');
     R.sala = formatar(sala); R.papel = papel || 'jogador'; R.nome = nome || 'Sem nome'; R.presentes = new Map(); R.erro = '';
-    await prepararSala(sala); deve = true; tentativa = 0; abrir();
+    await prepararSala(sala); deve = true; tentativa = 0; if (!abrirFirebase()) abrir();
     clearInterval(hb); hb = setInterval(() => { if (R.conectado()) anunciar(false); const lim = Date.now() - 110000; let mudou = false; R.presentes.forEach((p, k) => { if (p.visto < lim) { R.presentes.delete(k); mudou = true; } }); if (mudou) emitir('presenca', R.presentes); }, 40000);
   };
-  R.sair = () => { deve = false; clearInterval(hb); clearInterval(ping); if (ws && ws.readyState === 1) { try { enviar('tchau', {}); setTimeout(() => ws && ws.close(), 150); } catch { ws.close(); } } else if (ws) ws.close(); R.presentes = new Map(); mudar('desconectado'); };
+  R.sair = () => { if (fb) { const f = fb; try { enviar('tchau', {}); } catch {} setTimeout(() => f.fechar(), 400); } deve = false; clearInterval(hb); clearInterval(ping); if (ws && ws.readyState === 1) { try { enviar('tchau', {}); setTimeout(() => ws && ws.close(), 150); } catch { ws.close(); } } else if (ws) ws.close(); R.presentes = new Map(); mudar('desconectado'); };
   // Historiador: expulsa um jogador (ele recebe o aviso, sai da sala e não volta a ser ouvido até ser readmitido)
   R.expulsar = async (id) => { R.banidos.add(id); R.presentes.delete(id); emitir('presenca', R.presentes); try { await enviar('kick', {}, id); } catch {} };
   R.readmitir = (id) => { R.banidos.delete(id); emitir('presenca', R.presentes); };

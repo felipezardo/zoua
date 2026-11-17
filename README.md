@@ -84,3 +84,24 @@ assets/
 
 - **Cenas:** uma fila de imagens no topo (os dois mapas + suas imagens e links). Um clique mostra a imagem aos jogadores na hora, já com a vista do Historiador; não existem mais os botões "Levar os jogadores a esta vista" nem "Transmitir minha vista". "Esconder cena"/"Mostrar cena" liga e desliga a projeção. Os jogadores acompanham o Historiador por padrão (podem desmarcar "Seguir o Historiador").
 - **Trilha sonora:** uma lista única (links do YouTube/áudio e arquivos do computador) com ▶ em cada faixa; clicou, tocou para a sala. Aparece na aba Cenas e também na janela da nota musical.
+
+## Etapa 5: Jornada compartilhada, ataque pelo token e Firebase na conexão
+
+- **Jornada compartilhada** (`jornada.js`, `jornada-gm.js`, `jornada-jogador.js`): a ficha de Jornada (registro, Companhia, pôneis, diário, eventos e marcas do mapa) é a mesma para o Historiador e os jogadores conectados. Nova aba **Jornada** na Mesa do Historiador. O Historiador guarda tudo na mesa (vai no "Salvar a mesa inteira"). O jogador que entra recebe a Jornada do Historiador; se a do Historiador estiver vazia, a do jogador a preenche. O mapa dos jogadores é sempre o dos jogadores; só o Historiador tem o olho para ver o mapa dele (na tela dele).
+- **Ataque pelo token** (`ataque-gm.js`, `cena-jogador.js`): o jogador toca num token adversário e vê as armas da própria ficha. Ao escolher uma, o Historiador recebe um cartão para **Autorizar** ou **Negar**. Autorizado, a rolagem sai com os valores da ficha (com o Bloqueio do adversário somado ao NA). Ao acertar, o dano (arma + Golpe Pesado por ícone) é descontado da Resistência; num Golpe Perfurante o adversário faz a Proteção (dados de Armadura contra o Ferimento da arma) e, se falhar, sofre um Ferimento.
+- **Firebase na conexão** (`rede.js`): a sala agora passa as mensagens pelo Firebase (`um-anel/salas/<CÓDIGO>/msgs`, criptografadas com o código). Se o Firebase recusar ou não carregar, volta sozinha para o MQTT público. Para forçar o MQTT: `localStorage.setItem('um-anel-transporte','mqtt')`.
+
+### Regras finais do Firebase (Realtime Database > Regras)
+
+Acrescente o bloco `"um-anel"` ao lado do `"salas"` que já existe:
+
+```json
+"um-anel": { "salas": { "$sala": {
+  ".read": "$sala.matches(/^[A-Z0-9-]{5,14}$/)",
+  ".write": "$sala.matches(/^[A-Z0-9-]{5,14}$/)",
+  "imgs": { "$k": { "src": { ".validate": "newData.isString() && newData.val().length < 3000000" } } },
+  "audio": { "$k": { "b64": { ".validate": "newData.isString() && newData.val().length < 8000000" } } },
+  "msgs": { "$m": { ".validate": "newData.hasChildren(['t','ts']) && newData.child('t').isString() && newData.child('t').val().length < 2000000" } }
+} } }
+```
+Use **Encerrar sala** ao fim da sessão: apaga do banco as imagens, áudios e mensagens da sala.
