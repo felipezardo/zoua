@@ -67,7 +67,7 @@
   function lerImagem(file, max) { return reduzirImagem(file, max).then((src) => new Promise((ok, no) => { const im = new Image(); im.onload = () => ok({ src, w: im.width, h: im.height }); im.onerror = no; im.src = src; })); }
   document.addEventListener('click', (e) => {
     const t = e.target;
-    const f = t.closest('[data-fundo]'); if (f) { const k = f.dataset.fundo; if (k === 'imagem') { $('#arq-cena-img').value = ''; $('#arq-cena-img').click(); } else { C().fundo = k === 'nenhum' ? { tipo: 'nenhum' } : { tipo: 'mapa', modo: k }; salvar(); atualizar(); sincronizar(); } return; }
+    const f = t.closest('[data-fundo]'); if (f) { const k = f.dataset.fundo; if (k === 'imagem') { abrirBibImg(); } else { C().fundo = k === 'nenhum' ? { tipo: 'nenhum' } : { tipo: 'mapa', modo: k }; salvar(); atualizar(); sincronizar(); } return; }
     const p = t.closest('[data-pal]'); if (p) { const [tp, ref] = p.dataset.pal.split(':'); colocar(tp, ref); return; }
     const s = t.closest('[data-csel]'); if (s) { const tk = C().tokens.find((x) => x.id === sel); if (!tk) return; const k = s.dataset.csel;
       if (k === 'abrir') abrirToken(tk.tp, tk.ref); else if (k === 'maior') tk.esc = Math.min(4, +((tk.esc || 1) + 0.25).toFixed(2)); else if (k === 'menor') tk.esc = Math.max(0.5, +((tk.esc || 1) - 0.25).toFixed(2)); else if (k === 'ocultar') tk.oculto = !tk.oculto; else if (k === 'remover') { C().tokens = C().tokens.filter((x) => x.id !== sel); sel = null; visor.selecionar(null); }
@@ -83,6 +83,39 @@
   });
 
   // ---------- sincronização com os jogadores ----------
+  // ---------- biblioteca de imagens de cena (várias imagens guardadas; clique para usar) ----------
+  let bibImgs = [];
+  document.body.insertAdjacentHTML('beforeend', `<dialog id="dlg-bib-img" class="dlg-bib" aria-labelledby="bib-t"><h2 id="bib-t">Imagens da cena</h2>
+    <p class="nota">Adicione quantas imagens quiser (mapas, cenários, retratos). Clique numa para mostrá-la como fundo da cena; troque quando quiser. Ficam guardadas só neste navegador.</p>
+    <label class="campo">Adicionar imagens (várias de uma vez)<input type="file" id="bib-arq" accept="image/*" multiple></label>
+    <div id="bib-grade" class="bib-grade" aria-live="polite"></div>
+    <div class="dlg-botoes"><button type="button" class="sec" id="bib-fechar">Fechar</button></div></dialog>`);
+  const dlgBib = $('#dlg-bib-img');
+  async function carregarBib() { try { bibImgs = await Biblioteca.listar('img'); } catch { bibImgs = []; } desenharBib(); }
+  function desenharBib() {
+    const atual = C().fundo && C().fundo.tipo === 'imagem' ? C().fundo.lib : '';
+    $('#bib-grade').innerHTML = bibImgs.length ? bibImgs.map((i) => `<figure class="bib-item${i.id === atual ? ' on' : ''}"><button type="button" class="bib-usar" data-bib="usar" data-id="${esc2(i.id)}" title="Usar como fundo: ${esc2(i.nome)}"><img src="${i.mini}" alt="${esc2(i.nome)}" loading="lazy"></button><figcaption>${esc2(i.nome)}</figcaption><button type="button" class="bib-x" data-bib="del" data-id="${esc2(i.id)}" aria-label="Remover ${esc2(i.nome)} da biblioteca">×</button></figure>`).join('') : '<p class="nota">Nenhuma imagem ainda. Use o campo acima para adicionar.</p>';
+  }
+  function abrirBibImg() { if (!dlgBib.open) dlgBib.showModal(); carregarBib(); }
+  async function usarImgBib(id) {
+    const it = await Biblioteca.obter(id); if (!it) return RedeUI.aviso('Imagem não encontrada.');
+    C().fundo = { tipo: 'imagem', src: it.src, w: it.w, h: it.h, lib: it.id }; C().tokens.forEach((k) => { k.x = Math.min(k.x, it.w); k.y = Math.min(k.y, it.h); });
+    salvar(); atualizar(); sincronizar(true); desenharBib(); RedeUI.aviso('Fundo trocado: ' + it.nome);
+  }
+  dlgBib.addEventListener('click', async (e) => {
+    if (e.target === dlgBib || e.target.id === 'bib-fechar') return dlgBib.close();
+    const b = e.target.closest('[data-bib]'); if (!b) return;
+    if (b.dataset.bib === 'usar') usarImgBib(b.dataset.id);
+    else if (b.dataset.bib === 'del') { await Biblioteca.remover(b.dataset.id); if (C().fundo && C().fundo.lib === b.dataset.id) delete C().fundo.lib; carregarBib(); }
+  });
+  dlgBib.addEventListener('change', async (e) => {
+    if (e.target.id !== 'bib-arq') return; const fs = [...e.target.files]; e.target.value = ''; let n = 0, ult = '';
+    for (const f of fs) {
+      if (!/^image\//.test(f.type)) continue;
+      try { const im = await lerImagem(f, 1280), mini = await Biblioteca.miniatura(im.src), id = Biblioteca.id(); await Biblioteca.adicionar({ id, tipo: 'img', nome: f.name.replace(/\.[^.]+$/, ''), src: im.src, w: im.w, h: im.h, mini, criado: Date.now() }); n++; ult = id; } catch { RedeUI.aviso('Não consegui ler ' + f.name); }
+    }
+    if (n) RedeUI.aviso(`${n} imagem(ns) adicionada(s).`); await carregarBib();
+  });
   function sincronizar(agora) { if (!C().ativa || !redeOn()) return; clearTimeout(tSync); tSync = setTimeout(enviarCena, agora ? 0 : 150); }
   function chaveImg(src) { if (!src) return ''; const k = 'i' + hash(src); imgPorKey.set(k, src); return k; }
   function dadosCena() {

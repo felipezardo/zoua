@@ -7,7 +7,8 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const LS = { get: (k, d = '') => { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
   const aviso = (m) => (window.RedeUI ? RedeUI.aviso(m) : null);
-  const M = { on: false, playing: false, kind: '', id: '', src: '', titulo: '', loop: true }; // estado da faixa (o que o Historiador decide)
+  const M = { on: false, playing: false, kind: '', id: '', src: '', titulo: '', loop: true, local: '', carregando: false };
+  let tokArq = 0; // estado da faixa (o que o Historiador decide)
   let vol = Math.min(1, Math.max(0, +LS.get('um-anel-vol', '0.5'))), mudo = LS.get('um-anel-mudo', '0') === '1', bloqueado = false, min = LS.get('um-anel-mini', '0') === '1';
   const audio = new Audio();
 
@@ -32,35 +33,40 @@
   const ytId = (u) => { u = String(u || '').trim(); const m = u.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/); return m ? m[1] : /^[\w-]{11}$/.test(u) ? u : ''; };
   const yp = (f, a) => { const i = $('#musica-yt iframe'); if (i && i.contentWindow) i.contentWindow.postMessage(JSON.stringify({ event: 'command', func: f, args: a || [] }), '*'); };
   function volume() { audio.volume = vol; audio.muted = mudo; yp('setVolume', [Math.round(vol * 100)]); yp(mudo ? 'mute' : 'unMute'); }
-  function parar() { audio.pause(); audio.removeAttribute('src'); try { audio.load(); } catch {} $('#musica-yt').innerHTML = ''; bloqueado = false; }
+  function parar() { tokArq++; M.carregando = false; audio.pause(); audio.removeAttribute('src'); try { audio.load(); } catch {} $('#musica-yt').innerHTML = ''; bloqueado = false; }
   function tocar() {
     parar(); if (!M.on) return pintar(); bloqueado = false;
     if (M.kind === 'yt') {
       const id = encodeURIComponent(M.id);
       $('#musica-yt').innerHTML = `<iframe width="160" height="90" allow="autoplay; encrypted-media" title="Música" src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&controls=0&enablejsapi=1&playsinline=1${M.loop ? `&loop=1&playlist=${id}` : ''}"></iframe>`;
       $('#musica-yt iframe').onload = () => { volume(); setTimeout(() => { volume(); if (!M.playing) yp('pauseVideo'); }, 900); };
+    } else if (M.kind === 'arq') {
+      const tk = ++tokArq;
+      const entrar = (url) => { if (tk !== tokArq || !M.on || M.kind !== 'arq') return; M.carregando = false; audio.src = url; audio.loop = !!M.loop; volume(); if (M.playing) audio.play().catch(() => { bloqueado = true; pintar(); }); pintar(); };
+      if (M.local) entrar(M.local);
+      else { M.carregando = true; (window.Nuvem && window.Rede ? Nuvem.lerArquivo(Rede.sala, M.id) : Promise.resolve(null)).then((url) => { if (url) entrar(url); else if (tk === tokArq) { M.carregando = false; aviso('Não consegui carregar a música da sala.'); pintar(); } }); }
     } else { audio.src = M.src; audio.loop = !!M.loop; volume(); if (M.playing) audio.play().catch(() => { bloqueado = true; pintar(); }); }
     pintar();
   }
   function pausaRetoma() { if (M.kind === 'yt') yp(M.playing ? 'playVideo' : 'pauseVideo'); else if (M.playing) audio.play().catch(() => { bloqueado = true; pintar(); }); else audio.pause(); pintar(); }
   function aplicar(d) {
     if (!d || !d.on) { M.on = false; parar(); return pintar(); }
-    const nova = !M.on || M.kind !== d.kind || (d.kind === 'yt' ? M.id !== d.id : M.src !== d.src) || M.loop !== !!d.loop;
-    Object.assign(M, { on: true, playing: !!d.playing, kind: d.kind, id: d.id || '', src: d.src || '', titulo: d.titulo || '', loop: !!d.loop });
+    const nova = !M.on || M.kind !== d.kind || (d.kind === 'url' ? M.src !== d.src : M.id !== d.id) || M.loop !== !!d.loop;
+    Object.assign(M, { on: true, playing: !!d.playing, kind: d.kind, id: d.id || '', src: d.src || '', titulo: d.titulo || '', loop: !!d.loop, local: d.local || '' });
     if (nova) tocar(); else pausaRetoma();
   }
   function pintar() {
     mini.hidden = !M.on; if (!M.on) { if (gm) desenharDlg(); return; }
     mini.classList.toggle('min', min); mini.classList.toggle('tocando', M.playing && !bloqueado);
     $('#musica-min').textContent = min ? '♪' : '–'; $('#musica-min').setAttribute('aria-label', min ? 'Abrir o player' : 'Recolher o player');
-    $('#musica-titulo').textContent = M.titulo || (M.kind === 'yt' ? 'YouTube' : 'Faixa');
+    $('#musica-titulo').textContent = (M.titulo || (M.kind === 'yt' ? 'YouTube' : 'Faixa')) + (M.carregando ? ' (carregando…)' : '');
     $('#musica-vol').value = Math.round(vol * 100); $('#musica-mudo').textContent = mudo || vol === 0 ? '🔇' : '🔊'; $('#musica-mudo').setAttribute('aria-label', mudo ? 'Ativar o som' : 'Silenciar');
     if (gm) { $('#musica-pp').textContent = M.playing ? '❚❚' : '▶'; $('#musica-pp').setAttribute('aria-label', M.playing ? 'Pausar para todos' : 'Retomar para todos'); desenharDlg(); }
     else { const b = $('#musica-ativar'); b.hidden = !(bloqueado || (M.playing && M.kind !== 'yt' && audio.paused)); }
   }
 
   // ---------- sincronização pela sala ----------
-  const dados = () => ({ on: M.on, playing: M.playing, kind: M.kind, id: M.id, src: M.src, titulo: M.titulo, loop: M.loop });
+  const dados = () => ({ on: M.on, playing: M.playing, kind: M.kind, id: M.id, src: M.kind === 'arq' ? '' : M.src, titulo: M.titulo, loop: M.loop });
   const publicar = (alvo) => { if (window.Rede && Rede.conectado()) Rede.enviar('musica', dados(), alvo); };
   if (window.RedeUI) {
     RedeUI.on('musica', (env) => { if (!gm && env.p === 'gm') aplicar(env.d); });
@@ -92,6 +98,9 @@
     bt.type = 'button'; bt.id = 'musica-bt'; bt.className = 'rede-bt musica-bt'; bt.title = 'Música da mesa'; bt.setAttribute('aria-label', 'Música da mesa');
     bt.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg><span class="rede-dot" aria-hidden="true"></span>';
     if (dir) dir.insertBefore(bt, dir.firstChild);
+    let arqs = []; const recarregarArqs = () => (window.Biblioteca ? Biblioteca.listar('musica').then((l) => { arqs = l; desenharDlg(); }).catch(() => {}) : null);
+    const tam = (b) => b > 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+    const LIMITE = 5 * 1048576;
     const lib = () => { try { const l = JSON.parse(LS.get('um-anel-faixas', '[]')); return Array.isArray(l) ? l : []; } catch { return []; } };
     const gravar = (l) => LS.set('um-anel-faixas', JSON.stringify(l.slice(0, 60)));
     window.desenharDlg = desenharDlg;
@@ -107,7 +116,9 @@
         <label class="cond-lbl"><input type="checkbox" id="mus-loop" ${M.loop ? 'checked' : ''}> Repetir</label>
         <div class="ch-acoes"><button type="button" data-mus="tocar">Tocar agora</button><button type="button" class="sec" data-mus="salvar">Guardar na biblioteca</button></div>
         <h3>Biblioteca</h3>${l.length ? `<ul class="lista mus-lib">${l.map((f, i) => `<li><span>${esc(f.titulo)}</span><span class="ch-acoes"><button type="button" class="mini-b" data-mus="lib" data-i="${i}">Tocar</button><button type="button" class="sec perigo mini-b" data-mus="del" data-i="${i}" aria-label="Remover ${esc(f.titulo)}">×</button></span></li>`).join('')}</ul>` : '<p class="nota">Nada guardado ainda. Cole um link acima e use “Guardar na biblioteca”. A biblioteca fica neste navegador.</p>'}
-        <p class="nota">Arquivos do seu computador serão transmitidos na etapa do Firebase; por enquanto use links.</p>`;
+        <h3>Arquivos do computador</h3>
+        <label class="campo mus-arq">Adicionar músicas (mp3, ogg, wav…) — várias de uma vez<input type="file" id="mus-arq" accept="audio/*" multiple></label>
+        ${arqs.length ? `<ul class="lista mus-lib">${arqs.map((f) => `<li><span>${esc(f.nome)} <small>${tam(f.tam || 0)}${f.tam > LIMITE ? ' · grande demais para transmitir' : ''}</small></span><span class="ch-acoes"><button type="button" class="mini-b" data-mus="arq" data-id="${esc(f.id)}">Tocar</button><button type="button" class="sec perigo mini-b" data-mus="arqdel" data-id="${esc(f.id)}" aria-label="Remover ${esc(f.nome)}">×</button></span></li>`).join('')}</ul>` : '<p class="nota">Nenhum arquivo ainda. Eles ficam guardados neste navegador e são enviados aos jogadores na hora de tocar (até 5 MB cada).</p>'}`;
       if (foco && $('#' + foco)) $('#' + foco).focus();
     }
     function iniciar(url, titulo) {
@@ -124,10 +135,28 @@
       else if (k === 'lib') { const f = lib()[+b.dataset.i]; if (f) iniciar(f.url, f.titulo); }
       else if (k === 'del') { const l = lib(); l.splice(+b.dataset.i, 1); gravar(l); desenharDlg(); }
       else if (k === 'pp') { M.playing = !M.playing; pausaRetoma(); publicar(); desenharDlg(); }
+      else if (k === 'arq') tocarArquivo(b.dataset.id);
+      else if (k === 'arqdel') Biblioteca.remover(b.dataset.id).then(recarregarArqs);
       else if (k === 'stop') parada();
     });
-    document.addEventListener('change', (e) => { if (e.target.id === 'mus-loop' && M.on) { M.loop = e.target.checked; tocar(); publicar(); } });
-    bt.onclick = () => { const d = $('#dlg-musica'); if (!d.open) d.showModal(); desenharDlg(); };
+    async function tocarArquivo(id) {
+      const it = await Biblioteca.obter(id); if (!it) return aviso('Arquivo não encontrado na biblioteca.');
+      const loop = $('#mus-loop') ? $('#mus-loop').checked : true, online = window.Rede && Rede.conectado();
+      aplicar({ on: true, playing: true, kind: 'arq', id: it.id, titulo: it.nome, loop, local: URL.createObjectURL(it.blob) });
+      if (!online) { desenharDlg(); return aviso('Tocando só para você (sem sala).'); }
+      if (it.tam > LIMITE) { desenharDlg(); return aviso('Arquivo maior que 5 MB: toca só para você. Use um arquivo menor ou um link.'); }
+      aviso('Enviando a música para a sala…'); const ok = window.Nuvem ? await Nuvem.salvarArquivo(Rede.sala, it.id, it.blob) : false;
+      if (!ok) { aviso('Não consegui enviar o arquivo (Firebase). Toca só para você.'); return desenharDlg(); }
+      if (M.on && M.id === it.id) { publicar(); aviso('Música tocando para a sala.'); }
+      desenharDlg();
+    }
+    document.addEventListener('change', async (e) => {
+      if (e.target.id === 'mus-arq') {
+        const fs = [...e.target.files]; e.target.value = ''; let n = 0;
+        for (const f of fs) { if (!/^audio\//.test(f.type) && !/\.(mp3|ogg|wav|m4a|aac|flac|opus)$/i.test(f.name)) continue; await Biblioteca.adicionar({ id: Biblioteca.id(), tipo: 'musica', nome: f.name.replace(/\.[^.]+$/, ''), blob: f, mime: f.type || 'audio/mpeg', tam: f.size, criado: Date.now() }); n++; }
+        aviso(n ? `${n} música(s) adicionada(s) à biblioteca.` : 'Nenhum arquivo de áudio reconhecido.'); recarregarArqs(); return;
+      } if (e.target.id === 'mus-loop' && M.on) { M.loop = e.target.checked; tocar(); publicar(); } });
+    bt.onclick = () => { const d = $('#dlg-musica'); if (!d.open) d.showModal(); desenharDlg(); recarregarArqs(); };
     $('#musica-fechar').onclick = () => $('#dlg-musica').close();
     $('#dlg-musica').addEventListener('click', (e) => { if (e.target.id === 'dlg-musica') e.target.close(); });
   }

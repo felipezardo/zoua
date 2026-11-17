@@ -73,3 +73,9 @@ assets/
 } } }
 ```
 (dentro de `"rules": { ... }`, ao lado do nó `"salas"` que já existe)
+
+## Etapa 3: bibliotecas de imagens e músicas
+
+- **Imagens:** em Cenas > "Imagem…" abre a biblioteca (`biblioteca.js`, guardada no navegador do Historiador). Suba várias de uma vez e clique numa para trocar o fundo da cena a qualquer momento.
+- **Músicas:** no botão de nota musical, "Arquivos do computador": adicione vários arquivos e toque quando quiser. Até 5 MB por arquivo vão para os jogadores pelo Firebase (`um-anel/salas/<CÓDIGO>/audio`); maiores tocam só para você. Links do YouTube/áudio continuam funcionando.
+- Ao encerrar a sala, imagens e áudios enviados são apagados do banco.

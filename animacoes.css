@@ -128,3 +128,19 @@
   .barra .rede-bt svg,.barra .tema svg{transform-origin:center}
   .barra .marca{margin-right:0}
 }
+
+/* ---------- biblioteca de imagens e arquivos de música ---------- */
+.dlg-bib{max-width:min(46rem,96vw)}
+.bib-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(8.5rem,1fr));gap:.6rem;margin:.6rem 0;max-height:52vh;overflow:auto;padding:.2rem}
+.bib-item{position:relative;margin:0;border:2px solid var(--tinta);border-radius:8px;overflow:hidden;background:var(--campo);transition:transform .2s var(--ease),box-shadow .2s,border-color .2s;animation:surgir .25s var(--ease) both}
+@media (hover:hover){.bib-item:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 6px 14px #0004}}
+.bib-item.on{border-color:#2c6b2f;box-shadow:0 0 0 3px #2c6b2f55}
+.bib-item.on::after{content:"Em uso";position:absolute;top:.3rem;left:.3rem;background:#2c6b2f;color:#fff;font:700 .65rem var(--titulo);padding:.1rem .4rem;border-radius:999px}
+.bib-usar{display:block;width:100%;padding:0;border:0;background:#0001;cursor:pointer;aspect-ratio:4/3}
+.bib-usar img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s var(--ease)}
+@media (hover:hover){.bib-usar:hover img{transform:scale(1.08)}}
+.bib-item figcaption{padding:.25rem .4rem;font:600 .72rem var(--titulo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bib-x{position:absolute;top:.25rem;right:.25rem;width:1.5rem;height:1.5rem;border-radius:50%;border:0;background:#000b;color:#fff;cursor:pointer;opacity:0;transition:opacity .15s,transform .15s,background .15s;padding:0;line-height:1}
+.bib-item:hover .bib-x,.bib-x:focus-visible{opacity:1}
+@media (hover:none){.bib-x{opacity:.85}}
+.bib-x:hover{background:#8a2a24;transform:scale(1.12)}
