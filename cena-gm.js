@@ -4,6 +4,7 @@
   const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + s.length.toString(36); };
   const imgPorKey = new Map(); let visor = null, sel = null, tSync, tVista;
   C().ativa = false; // a cena sempre volta oculta ao abrir a página
+  C().aoVivo = true; // a vista do Historiador sempre acompanha os jogadores (sem botão de "levar até aqui")
 
   // ---------- tokens da cena ----------
   function resolver(t) {
@@ -17,9 +18,10 @@
 
   // ---------- estrutura ----------
   function montar() {
-    $('#v-cenas').innerHTML = `<header class="mesa-topo"><h2>Cenas</h2><div class="acoes"><button type="button" id="cena-proj" aria-pressed="false">Mostrar aos jogadores</button><button type="button" class="sec" id="cena-foco">Levar os jogadores a esta vista</button></div></header>
-      <div class="cena-barra"><div class="grupo-b" role="radiogroup" aria-label="Fundo da cena"><button type="button" role="radio" data-fundo="jogadores">Mapa dos jogadores</button><button type="button" role="radio" data-fundo="historiador">Mapa do Historiador</button><button type="button" role="radio" data-fundo="imagem">Imagem…</button><button type="button" role="radio" data-fundo="nenhum">Sem fundo</button></div>
-        <label class="cond-lbl"><input type="checkbox" id="cena-encaixar"> Encaixar nos hexágonos</label><label class="cond-lbl"><input type="checkbox" id="cena-vida"> Mostrar a vida dos adversários</label><label class="cond-lbl"><input type="checkbox" id="cena-ao-vivo"> Transmitir minha vista</label>
+    $('#v-cenas').innerHTML = `<header class="mesa-topo"><h2>Cenas</h2><div class="acoes"><button type="button" id="cena-proj" aria-pressed="false">Mostrar cena</button></div></header>
+      <section class="cena-fila" aria-label="Imagens da cena"><div class="fila-topo"><h3>Imagens</h3><div class="mus-add fila-add"><label class="btn-arq">Adicionar imagens<input type="file" id="bib-arq" accept="image/*" multiple hidden></label><input id="fila-link" placeholder="…ou cole o link de uma imagem" autocomplete="off"><button type="button" id="fila-add-link">Adicionar link</button></div></div><p class="nota">Clique numa imagem ou mapa para mostrá-lo aos jogadores na hora, com a mesma vista que você está usando.</p><div id="fila-grade" class="bib-grade fila" role="list"></div></section>
+      <section class="cena-fila trilha" aria-label="Trilha sonora"><div class="fila-topo"><h3>Trilha sonora</h3></div><div id="cena-trilha-corpo"></div></section>
+      <div class="cena-barra"><label class="cond-lbl"><input type="checkbox" id="cena-encaixar"> Encaixar nos hexágonos</label><label class="cond-lbl"><input type="checkbox" id="cena-vida"> Mostrar a vida dos adversários</label>
         <label class="campo cena-tit">Título<input id="cena-titulo-in" autocomplete="off"></label></div>
       <div class="cena-grade"><div class="cena-palco"><div id="cena-visor-gm"></div><div id="cena-sel" class="cena-sel" aria-live="polite"></div></div>
         <aside class="cena-lado"><h3>Colocar na cena</h3><div id="cena-paleta"></div><div id="cena-combate-gm" class="cena-combate-gm"></div><h3>Rolagens da mesa</h3><ol id="cena-feed-gm" class="rede-feed-lista cena-feed"></ol></aside></div>`;
@@ -28,18 +30,17 @@
       aoMover: (id, x, y) => { const t = C().tokens.find((q) => q.id === id); if (t) { t.x = x; t.y = y; salvar(); sincronizar(); } },
       aoVista: () => { if (C().aoVivo) { clearTimeout(tVista); tVista = setTimeout(() => sincronizar(), 250); } } });
     RedeUI.montarFeed($('#cena-feed-gm'));
-    atualizar();
+    atualizar(); carregarBib(); if (window.desenharMusica) desenharMusica();
   }
   RedeUI.feedVisivel = () => !$('#v-cenas').hidden;
 
   // ---------- atualização da tela ----------
   function atualizar() {
     if (!visor) return; const c = C();
-    $$('[data-fundo]').forEach((b) => { const on = (c.fundo?.tipo === 'mapa' && b.dataset.fundo === c.fundo.modo) || (c.fundo?.tipo === 'imagem' && b.dataset.fundo === 'imagem') || (!c.fundo || c.fundo.tipo === 'nenhum') && b.dataset.fundo === 'nenhum'; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
-    $('#cena-proj').setAttribute('aria-pressed', String(c.ativa)); $('#cena-proj').textContent = c.ativa ? 'Parar de mostrar' : 'Mostrar aos jogadores'; $('#cena-proj').classList.toggle('on', c.ativa);
+    renderFila();
+    $('#cena-proj').setAttribute('aria-pressed', String(c.ativa)); $('#cena-proj').textContent = c.ativa ? 'Esconder cena' : 'Mostrar cena'; $('#cena-proj').classList.toggle('on', c.ativa);
     const set = (id, v) => { const e = $('#' + id); if (e && e !== document.activeElement) e.checked = v; };
     set('cena-encaixar', c.encaixar); set('cena-vida', c.mostrarVida); set('cena-ao-vivo', c.aoVivo); if ($('#cena-titulo-in') !== document.activeElement) $('#cena-titulo-in').value = c.titulo;
-    $('[data-fundo="jogadores"]').parentElement.nextElementSibling.hidden = false;
     visor.definirFundo(fundoLocal()); visor.definirTokens(tokensGM()); renderPaleta(); renderSel(); renderCombateGM();
   }
   function renderPaleta() {
@@ -67,7 +68,7 @@
   function lerImagem(file, max) { return reduzirImagem(file, max).then((src) => new Promise((ok, no) => { const im = new Image(); im.onload = () => ok({ src, w: im.width, h: im.height }); im.onerror = no; im.src = src; })); }
   document.addEventListener('click', (e) => {
     const t = e.target;
-    const f = t.closest('[data-fundo]'); if (f) { const k = f.dataset.fundo; if (k === 'imagem') { abrirBibImg(); } else { C().fundo = k === 'nenhum' ? { tipo: 'nenhum' } : { tipo: 'mapa', modo: k }; salvar(); atualizar(); sincronizar(); } return; }
+    const f = t.closest('[data-fundo]'); if (f) { const k = f.dataset.fundo; if (k === 'imagem') { abrirBibImg(); } else { C().fundo = k === 'nenhum' ? { tipo: 'nenhum' } : { tipo: 'mapa', modo: k }; salvar(); mostrar(); } return; }
     const p = t.closest('[data-pal]'); if (p) { const [tp, ref] = p.dataset.pal.split(':'); colocar(tp, ref); return; }
     const s = t.closest('[data-csel]'); if (s) { const tk = C().tokens.find((x) => x.id === sel); if (!tk) return; const k = s.dataset.csel;
       if (k === 'abrir') abrirToken(tk.tp, tk.ref); else if (k === 'maior') tk.esc = Math.min(4, +((tk.esc || 1) + 0.25).toFixed(2)); else if (k === 'menor') tk.esc = Math.max(0.5, +((tk.esc || 1) - 0.25).toFixed(2)); else if (k === 'ocultar') tk.oculto = !tk.oculto; else if (k === 'remover') { C().tokens = C().tokens.filter((x) => x.id !== sel); sel = null; visor.selecionar(null); }
@@ -83,36 +84,47 @@
   });
 
   // ---------- sincronização com os jogadores ----------
-  // ---------- biblioteca de imagens de cena (várias imagens guardadas; clique para usar) ----------
+  // ---------- fila de imagens: um clique mostra a imagem aos jogadores ----------
   let bibImgs = [];
-  document.body.insertAdjacentHTML('beforeend', `<dialog id="dlg-bib-img" class="dlg-bib" aria-labelledby="bib-t"><h2 id="bib-t">Imagens da cena</h2>
-    <p class="nota">Adicione quantas imagens quiser (mapas, cenários, retratos). Clique numa para mostrá-la como fundo da cena; troque quando quiser. Ficam guardadas só neste navegador.</p>
-    <label class="campo">Adicionar imagens (várias de uma vez)<input type="file" id="bib-arq" accept="image/*" multiple></label>
-    <div id="bib-grade" class="bib-grade" aria-live="polite"></div>
-    <div class="dlg-botoes"><button type="button" class="sec" id="bib-fechar">Fechar</button></div></dialog>`);
-  const dlgBib = $('#dlg-bib-img');
-  async function carregarBib() { try { bibImgs = await Biblioteca.listar('img'); } catch { bibImgs = []; } desenharBib(); }
-  function desenharBib() {
-    const atual = C().fundo && C().fundo.tipo === 'imagem' ? C().fundo.lib : '';
-    $('#bib-grade').innerHTML = bibImgs.length ? bibImgs.map((i) => `<figure class="bib-item${i.id === atual ? ' on' : ''}"><button type="button" class="bib-usar" data-bib="usar" data-id="${esc2(i.id)}" title="Usar como fundo: ${esc2(i.nome)}"><img src="${i.mini}" alt="${esc2(i.nome)}" loading="lazy"></button><figcaption>${esc2(i.nome)}</figcaption><button type="button" class="bib-x" data-bib="del" data-id="${esc2(i.id)}" aria-label="Remover ${esc2(i.nome)} da biblioteca">×</button></figure>`).join('') : '<p class="nota">Nenhuma imagem ainda. Use o campo acima para adicionar.</p>';
+  const MAPAS = [['jogadores', 'Mapa dos jogadores', 'assets/eriador.webp'], ['historiador', 'Mapa do Historiador', 'assets/eriador-historiador.webp']];
+  async function carregarBib() { try { bibImgs = await Biblioteca.listar('img'); } catch { bibImgs = []; } renderFila(); }
+  function renderFila() {
+    const g = $('#fila-grade'); if (!g) return; const f = C().fundo, mapa = f && f.tipo === 'mapa' ? f.modo : '', lib = f && f.tipo === 'imagem' ? f.lib : '';
+    const mapas = MAPAS.map(([k, n, src]) => `<figure class="bib-item${mapa === k ? ' on' : ''}" role="listitem"><button type="button" class="bib-usar" data-fundo="${k}" title="Mostrar aos jogadores: ${n}"><img src="${src}" alt="${n}"></button><figcaption>${n}</figcaption></figure>`);
+    const imgs = bibImgs.map((i) => `<figure class="bib-item${i.id === lib ? ' on' : ''}" role="listitem"><button type="button" class="bib-usar" data-bib="usar" data-id="${esc2(i.id)}" title="Mostrar aos jogadores: ${esc2(i.nome)}"><img src="${esc2(i.mini)}" alt="${esc2(i.nome)}" loading="lazy"></button><figcaption>${esc2(i.nome)}</figcaption><button type="button" class="bib-x" data-bib="del" data-id="${esc2(i.id)}" aria-label="Remover ${esc2(i.nome)} da lista">×</button></figure>`);
+    g.innerHTML = mapas.concat(imgs).join('');
   }
-  function abrirBibImg() { if (!dlgBib.open) dlgBib.showModal(); carregarBib(); }
+  // Troca o que os jogadores veem (se houver sala) e leva a vista do Historiador junto.
+  function mostrar() {
+    atualizar();
+    if (!redeOn()) { RedeUI.aviso('Fundo trocado. Conecte-se a uma sala (ícone de sinal) para os jogadores verem.'); return; }
+    C().ativa = true; atualizar(); enviarCena(); Rede.enviar('cena-foco', { vista: visor.vista() });
+  }
   async function usarImgBib(id) {
     const it = await Biblioteca.obter(id); if (!it) return RedeUI.aviso('Imagem não encontrada.');
     C().fundo = { tipo: 'imagem', src: it.src, w: it.w, h: it.h, lib: it.id }; C().tokens.forEach((k) => { k.x = Math.min(k.x, it.w); k.y = Math.min(k.y, it.h); });
-    salvar(); atualizar(); sincronizar(true); desenharBib(); RedeUI.aviso('Fundo trocado: ' + it.nome);
+    salvar(); mostrar();
   }
-  dlgBib.addEventListener('click', async (e) => {
-    if (e.target === dlgBib || e.target.id === 'bib-fechar') return dlgBib.close();
-    const b = e.target.closest('[data-bib]'); if (!b) return;
+  async function adicionarLinkImg() {
+    const url = ($('#fila-link').value || '').trim(); if (!/^https?:\/\//i.test(url)) return RedeUI.aviso('Cole um endereço que comece com http:// ou https://');
+    const dim = await new Promise((ok) => { const im = new Image(); im.onload = () => ok({ w: im.naturalWidth, h: im.naturalHeight }); im.onerror = () => ok(null); im.src = url; });
+    if (!dim) return RedeUI.aviso('Não consegui abrir essa imagem. Confira o link.');
+    const nome = decodeURIComponent(url.split('/').pop().split('?')[0] || 'Imagem').replace(/\.[^.]+$/, '') || 'Imagem';
+    await Biblioteca.adicionar({ id: Biblioteca.id(), tipo: 'img', nome, src: url, w: dim.w, h: dim.h, mini: url, criado: Date.now() });
+    $('#fila-link').value = ''; await carregarBib(); RedeUI.aviso('Imagem adicionada.');
+  }
+  document.addEventListener('click', async (e) => {
+    const t = e.target; if (t.id === 'fila-add-link') return adicionarLinkImg();
+    const b = t.closest('[data-bib]'); if (!b) return;
     if (b.dataset.bib === 'usar') usarImgBib(b.dataset.id);
     else if (b.dataset.bib === 'del') { await Biblioteca.remover(b.dataset.id); if (C().fundo && C().fundo.lib === b.dataset.id) delete C().fundo.lib; carregarBib(); }
   });
-  dlgBib.addEventListener('change', async (e) => {
-    if (e.target.id !== 'bib-arq') return; const fs = [...e.target.files]; e.target.value = ''; let n = 0, ult = '';
+  document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'fila-link') { e.preventDefault(); adicionarLinkImg(); } });
+  document.addEventListener('change', async (e) => {
+    if (e.target.id !== 'bib-arq') return; const fs = [...e.target.files]; e.target.value = ''; let n = 0;
     for (const f of fs) {
       if (!/^image\//.test(f.type)) continue;
-      try { const im = await lerImagem(f, 1280), mini = await Biblioteca.miniatura(im.src), id = Biblioteca.id(); await Biblioteca.adicionar({ id, tipo: 'img', nome: f.name.replace(/\.[^.]+$/, ''), src: im.src, w: im.w, h: im.h, mini, criado: Date.now() }); n++; ult = id; } catch { RedeUI.aviso('Não consegui ler ' + f.name); }
+      try { const im = await lerImagem(f, 1280), mini = await Biblioteca.miniatura(im.src); await Biblioteca.adicionar({ id: Biblioteca.id(), tipo: 'img', nome: f.name.replace(/\.[^.]+$/, ''), src: im.src, w: im.w, h: im.h, mini, criado: Date.now() }); n++; } catch { RedeUI.aviso('Não consegui ler ' + f.name); }
     }
     if (n) RedeUI.aviso(`${n} imagem(ns) adicionada(s).`); await carregarBib();
   });

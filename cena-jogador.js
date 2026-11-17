@@ -3,7 +3,7 @@
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const FASES = { saraivada: 'Saraivadas de Abertura', posicao: 'Posição', engajamento: 'Engajamento', resolucao: 'Resolução' };
-  const imgs = new Map(), pedidas = new Map(); let cena = null, gmId = null, ultimaCena = '', seguir = false;
+  const imgs = new Map(), pedidas = new Map(); let cena = null, gmId = null, ultimaCena = '', seguir = true;
   const visor = criarVisor($('#cena-visor'), { editavel: false, vazio: 'O Historiador ainda não mostrou nenhuma cena.', aoSelecionar: info });
   RedeUI.cenaJogador = { visor, imgs, get cena() { return cena; } };
   RedeUI.feedVisivel = () => !$('#vista-cenas').hidden;
@@ -65,7 +65,7 @@
   RedeUI.on('cena-img', (env) => { imgs.set(env.d.key, env.d.src); aplicar(); });
   RedeUI.on('cena-fim', () => { cena = null; ultimaCena = ''; aplicar(); avisoConexao(); });
   RedeUI.on('cena-foco', (env) => { if (cena) visor.irPara(env.d.vista); });
-  $('#cena-seguir').onchange = (e) => { seguir = e.target.checked; if (seguir && cena && cena.vista) visor.irPara(cena.vista); };
+  $('#cena-seguir').checked = seguir; $('#cena-seguir').onchange = (e) => { seguir = e.target.checked; if (seguir && cena && cena.vista) visor.irPara(cena.vista); };
   $('#cena-ajustar').onclick = () => visor.ajustar();
   // ao entrar na sala depois que o Historiador já estava projetando, pede o estado atual
   Rede.on('presenca', (p) => { if (!cena && [...p.values()].some((x) => x.papel === 'gm')) Rede.enviar('cena-pedir', { keys: [], estado: true }); });

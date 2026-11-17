@@ -92,10 +92,11 @@
   }
   function parada() { M.on = false; parar(); pintar(); publicar(); }
 
-  // ---------- janela do Historiador ----------
+  // ---------- painel do Historiador: uma lista de faixas (links e arquivos) com botão ▶ ----------
+  // O painel aparece na aba Cenas e também numa janela (botão de nota musical na barra), sem repetir ao mesmo tempo.
   if (gm) {
     const bt = document.createElement('button'), dir = $('.barra-dir');
-    bt.type = 'button'; bt.id = 'musica-bt'; bt.className = 'rede-bt musica-bt'; bt.title = 'Música da mesa'; bt.setAttribute('aria-label', 'Música da mesa');
+    bt.type = 'button'; bt.id = 'musica-bt'; bt.className = 'rede-bt musica-bt'; bt.title = 'Trilha sonora'; bt.setAttribute('aria-label', 'Trilha sonora');
     bt.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg><span class="rede-dot" aria-hidden="true"></span>';
     if (dir) dir.insertBefore(bt, dir.firstChild);
     let arqs = []; const recarregarArqs = () => (window.Biblioteca ? Biblioteca.listar('musica').then((l) => { arqs = l; desenharDlg(); }).catch(() => {}) : null);
@@ -103,62 +104,71 @@
     const LIMITE = 5 * 1048576;
     const lib = () => { try { const l = JSON.parse(LS.get('um-anel-faixas', '[]')); return Array.isArray(l) ? l : []; } catch { return []; } };
     const gravar = (l) => LS.set('um-anel-faixas', JSON.stringify(l.slice(0, 60)));
-    window.desenharDlg = desenharDlg;
+    const alvo = () => { const d = $('#dlg-musica'); return d && d.open ? $('#musica-corpo') : $('#cena-trilha-corpo'); };
+    window.desenharMusica = desenharDlg;
     function desenharDlg() {
-      const c = $('#musica-corpo'); if (!c || !$('#dlg-musica').open) { bt.classList.toggle('ativo', M.on); return; } bt.classList.toggle('ativo', M.on);
+      bt.classList.toggle('ativo', M.on);
+      const c = alvo(), outro = c && c.id === 'musica-corpo' ? $('#cena-trilha-corpo') : $('#musica-corpo');
+      if (outro) outro.innerHTML = ''; if (!c) return;
       const foco = document.activeElement && document.activeElement.id, vu = $('#mus-url') ? $('#mus-url').value : '', vn = $('#mus-nome') ? $('#mus-nome').value : '';
-      const l = lib(), on = Rede && Rede.conectado();
-      c.innerHTML = `<h2 id="mus-t">Música da mesa</h2>
-        <p class="nota">${on ? 'Todos na sala ouvem o que você tocar aqui.' : 'Você não está numa sala: a música toca só para você. Conecte-se (ícone de sinal) para os jogadores ouvirem.'} Cada um ajusta o próprio volume.</p>
-        ${M.on ? `<div class="mus-agora"><span class="mus-eq${M.playing ? ' on' : ''}" aria-hidden="true"><i></i><i></i><i></i></span><b>${esc(M.titulo || 'Faixa')}</b><span class="ch-acoes"><button type="button" data-mus="pp">${M.playing ? 'Pausar' : 'Retomar'}</button><button type="button" class="sec perigo" data-mus="stop">Parar</button></span></div>` : ''}
-        <label class="campo">Link do YouTube ou de um arquivo de áudio (.mp3, .ogg…)<input id="mus-url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" value="${esc(vu)}"></label>
-        <label class="campo">Nome da faixa (opcional)<input id="mus-nome" autocomplete="off" value="${esc(vn)}"></label>
-        <label class="cond-lbl"><input type="checkbox" id="mus-loop" ${M.loop ? 'checked' : ''}> Repetir</label>
-        <div class="ch-acoes"><button type="button" data-mus="tocar">Tocar agora</button><button type="button" class="sec" data-mus="salvar">Guardar na biblioteca</button></div>
-        <h3>Biblioteca</h3>${l.length ? `<ul class="lista mus-lib">${l.map((f, i) => `<li><span>${esc(f.titulo)}</span><span class="ch-acoes"><button type="button" class="mini-b" data-mus="lib" data-i="${i}">Tocar</button><button type="button" class="sec perigo mini-b" data-mus="del" data-i="${i}" aria-label="Remover ${esc(f.titulo)}">×</button></span></li>`).join('')}</ul>` : '<p class="nota">Nada guardado ainda. Cole um link acima e use “Guardar na biblioteca”. A biblioteca fica neste navegador.</p>'}
-        <h3>Arquivos do computador</h3>
-        <label class="campo mus-arq">Adicionar músicas (mp3, ogg, wav…) — várias de uma vez<input type="file" id="mus-arq" accept="audio/*" multiple></label>
-        ${arqs.length ? `<ul class="lista mus-lib">${arqs.map((f) => `<li><span>${esc(f.nome)} <small>${tam(f.tam || 0)}${f.tam > LIMITE ? ' · grande demais para transmitir' : ''}</small></span><span class="ch-acoes"><button type="button" class="mini-b" data-mus="arq" data-id="${esc(f.id)}">Tocar</button><button type="button" class="sec perigo mini-b" data-mus="arqdel" data-id="${esc(f.id)}" aria-label="Remover ${esc(f.nome)}">×</button></span></li>`).join('')}</ul>` : '<p class="nota">Nenhum arquivo ainda. Eles ficam guardados neste navegador e são enviados aos jogadores na hora de tocar (até 5 MB cada).</p>'}`;
-      if (foco && $('#' + foco)) $('#' + foco).focus();
+      const online = window.Rede && Rede.conectado(), links = lib();
+      const tocandoLink = (f) => M.on && M.kind !== 'arq' && (M.kind === 'yt' ? M.id === ytId(f.url) : M.src === f.url), tocandoArq = (f) => M.on && M.kind === 'arq' && M.id === f.id;
+      const eq = '<span class="mus-eq on" aria-hidden="true"><i></i><i></i><i></i></span>';
+      const linha = (on, acao, dados, nome, tipo, del) => `<li class="mus-faixa${on ? ' on' : ''}"><button type="button" class="mus-play" data-mus="${on ? 'pp' : acao}" ${dados} aria-label="${on ? (M.playing ? 'Pausar ' : 'Retomar ') : 'Tocar '}${esc(nome)}">${on && M.playing ? '❚❚' : '▶'}</button><span class="mus-nome">${esc(nome)}${on && M.playing ? eq : ''}</span><small>${tipo}</small><button type="button" class="mus-x" data-mus="${del}" ${dados} aria-label="Remover ${esc(nome)}">×</button></li>`;
+      const itens = links.map((f, i) => linha(tocandoLink(f), 'play', `data-i="${i}"`, f.titulo, ytId(f.url) ? 'YouTube' : 'Link', 'del')).concat(arqs.map((f) => linha(tocandoArq(f), 'arq', `data-id="${esc(f.id)}"`, f.nome, 'Arquivo · ' + tam(f.tam || 0) + (f.tam > LIMITE ? ' · só para você' : ''), 'arqdel')));
+      c.innerHTML = `${c.id === 'musica-corpo' ? '<h2 id="mus-t">Trilha sonora</h2>' : ''}
+        <div class="mus-add"><input id="mus-url" placeholder="Link do YouTube ou de um áudio" autocomplete="off" value="${esc(vu)}"><input id="mus-nome" placeholder="Nome (opcional)" autocomplete="off" value="${esc(vn)}"><button type="button" data-mus="salvar">Adicionar</button><label class="btn-arq">Enviar arquivo de áudio<input type="file" id="mus-arq" accept="audio/*" multiple hidden></label><button type="button" class="sec" data-mus="stop" ${M.on ? '' : 'disabled'}>Parar música</button><label class="cond-lbl"><input type="checkbox" id="mus-loop" ${M.loop ? 'checked' : ''}> Repetir</label></div>
+        ${itens.length ? `<ul class="mus-faixas">${itens.join('')}</ul>` : '<p class="nota">Nenhuma faixa ainda. Cole um link e clique em Adicionar, ou envie arquivos de áudio. Depois é só clicar em ▶.</p>'}
+        <p class="nota">${online ? 'Quem estiver na sala ouve o que você tocar (cada um controla o próprio volume).' : 'Você não está numa sala: a música toca só para você.'} Arquivos de até 5 MB são enviados pela nuvem.</p>`;
+      if (foco && $('#' + foco)) { const f = $('#' + foco); if (f.tagName === 'INPUT' && f.type === 'text') { f.focus(); try { f.setSelectionRange(f.value.length, f.value.length); } catch {} } }
     }
     function iniciar(url, titulo) {
       url = String(url || '').trim(); if (!url) return aviso('Cole um link do YouTube ou de um arquivo de áudio.');
       const id = ytId(url), loop = $('#mus-loop') ? $('#mus-loop').checked : true;
       if (!id && !/^https?:\/\//i.test(url)) return aviso('Link inválido: use um endereço que comece com https://');
       aplicar({ on: true, playing: true, kind: id ? 'yt' : 'url', id, src: id ? '' : url, titulo: titulo || (id ? 'YouTube' : decodeURIComponent(url.split('/').pop().split('?')[0]) || 'Faixa'), loop });
-      publicar(); desenharDlg(); aviso(Rede && Rede.conectado() ? 'Música tocando para a sala.' : 'Música tocando (só para você).');
+      publicar(); desenharDlg();
     }
-    document.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-mus]'); if (!b) return; const k = b.dataset.mus;
-      if (k === 'tocar') iniciar($('#mus-url').value, $('#mus-nome').value.trim());
-      else if (k === 'salvar') { const url = $('#mus-url').value.trim(); if (!ytId(url) && !/^https?:\/\//i.test(url)) return aviso('Cole um link válido para guardar.'); const l = lib(); l.unshift({ titulo: $('#mus-nome').value.trim() || (ytId(url) ? 'YouTube ' + ytId(url) : url.split('/').pop().split('?')[0] || 'Faixa'), url }); gravar(l); $('#mus-nome').value = ''; desenharDlg(); aviso('Guardado na biblioteca.'); }
-      else if (k === 'lib') { const f = lib()[+b.dataset.i]; if (f) iniciar(f.url, f.titulo); }
-      else if (k === 'del') { const l = lib(); l.splice(+b.dataset.i, 1); gravar(l); desenharDlg(); }
-      else if (k === 'pp') { M.playing = !M.playing; pausaRetoma(); publicar(); desenharDlg(); }
-      else if (k === 'arq') tocarArquivo(b.dataset.id);
-      else if (k === 'arqdel') Biblioteca.remover(b.dataset.id).then(recarregarArqs);
-      else if (k === 'stop') parada();
-    });
+    function adicionarLink() {
+      const url = ($('#mus-url') || {}).value.trim(); if (!ytId(url) && !/^https?:\/\//i.test(url)) return aviso('Cole um link válido (YouTube ou arquivo de áudio).');
+      const l = lib(); l.unshift({ titulo: $('#mus-nome').value.trim() || (ytId(url) ? 'YouTube ' + ytId(url) : decodeURIComponent(url.split('/').pop().split('?')[0]) || 'Faixa'), url }); gravar(l);
+      $('#mus-url').value = ''; $('#mus-nome').value = ''; desenharDlg(); aviso('Faixa adicionada.');
+    }
     async function tocarArquivo(id) {
       const it = await Biblioteca.obter(id); if (!it) return aviso('Arquivo não encontrado na biblioteca.');
       const loop = $('#mus-loop') ? $('#mus-loop').checked : true, online = window.Rede && Rede.conectado();
       aplicar({ on: true, playing: true, kind: 'arq', id: it.id, titulo: it.nome, loop, local: URL.createObjectURL(it.blob) });
       if (!online) { desenharDlg(); return aviso('Tocando só para você (sem sala).'); }
       if (it.tam > LIMITE) { desenharDlg(); return aviso('Arquivo maior que 5 MB: toca só para você. Use um arquivo menor ou um link.'); }
-      aviso('Enviando a música para a sala…'); const ok = window.Nuvem ? await Nuvem.salvarArquivo(Rede.sala, it.id, it.blob) : false;
+      const ok = window.Nuvem ? await Nuvem.salvarArquivo(Rede.sala, it.id, it.blob) : false;
       if (!ok) { aviso('Não consegui enviar o arquivo (Firebase). Toca só para você.'); return desenharDlg(); }
-      if (M.on && M.id === it.id) { publicar(); aviso('Música tocando para a sala.'); }
+      if (M.on && M.id === it.id) publicar();
       desenharDlg();
     }
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-mus]'); if (!b) return; const k = b.dataset.mus;
+      if (k === 'salvar') adicionarLink();
+      else if (k === 'play') { const f = lib()[+b.dataset.i]; if (f) iniciar(f.url, f.titulo); }
+      else if (k === 'del') { const l = lib(); l.splice(+b.dataset.i, 1); gravar(l); desenharDlg(); }
+      else if (k === 'pp') { M.playing = !M.playing; pausaRetoma(); publicar(); desenharDlg(); }
+      else if (k === 'arq') tocarArquivo(b.dataset.id);
+      else if (k === 'arqdel') Biblioteca.remover(b.dataset.id).then(recarregarArqs);
+      else if (k === 'stop') parada();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.target.id === 'mus-url' || e.target.id === 'mus-nome')) { e.preventDefault(); adicionarLink(); } });
     document.addEventListener('change', async (e) => {
       if (e.target.id === 'mus-arq') {
         const fs = [...e.target.files]; e.target.value = ''; let n = 0;
         for (const f of fs) { if (!/^audio\//.test(f.type) && !/\.(mp3|ogg|wav|m4a|aac|flac|opus)$/i.test(f.name)) continue; await Biblioteca.adicionar({ id: Biblioteca.id(), tipo: 'musica', nome: f.name.replace(/\.[^.]+$/, ''), blob: f, mime: f.type || 'audio/mpeg', tam: f.size, criado: Date.now() }); n++; }
-        aviso(n ? `${n} música(s) adicionada(s) à biblioteca.` : 'Nenhum arquivo de áudio reconhecido.'); recarregarArqs(); return;
-      } if (e.target.id === 'mus-loop' && M.on) { M.loop = e.target.checked; tocar(); publicar(); } });
-    bt.onclick = () => { const d = $('#dlg-musica'); if (!d.open) d.showModal(); desenharDlg(); recarregarArqs(); };
+        aviso(n ? `${n} música(s) adicionada(s).` : 'Nenhum arquivo de áudio reconhecido.'); recarregarArqs(); return;
+      }
+      if (e.target.id === 'mus-loop' && M.on) { M.loop = e.target.checked; tocar(); publicar(); }
+    });
+    bt.onclick = () => { const d = $('#dlg-musica'); if (!d.open) d.showModal(); desenharDlg(); };
     $('#musica-fechar').onclick = () => $('#dlg-musica').close();
+    $('#dlg-musica').addEventListener('close', desenharDlg);
     $('#dlg-musica').addEventListener('click', (e) => { if (e.target.id === 'dlg-musica') e.target.close(); });
+    recarregarArqs();
   }
   pintar();
 })();

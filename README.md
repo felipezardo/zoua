@@ -79,3 +79,8 @@ assets/
 - **Imagens:** em Cenas > "Imagem…" abre a biblioteca (`biblioteca.js`, guardada no navegador do Historiador). Suba várias de uma vez e clique numa para trocar o fundo da cena a qualquer momento.
 - **Músicas:** no botão de nota musical, "Arquivos do computador": adicione vários arquivos e toque quando quiser. Até 5 MB por arquivo vão para os jogadores pelo Firebase (`um-anel/salas/<CÓDIGO>/audio`); maiores tocam só para você. Links do YouTube/áudio continuam funcionando.
 - Ao encerrar a sala, imagens e áudios enviados são apagados do banco.
+
+## Etapa 4: fluxo simplificado (modelo candeiaescura)
+
+- **Cenas:** uma fila de imagens no topo (os dois mapas + suas imagens e links). Um clique mostra a imagem aos jogadores na hora, já com a vista do Historiador; não existem mais os botões "Levar os jogadores a esta vista" nem "Transmitir minha vista". "Esconder cena"/"Mostrar cena" liga e desliga a projeção. Os jogadores acompanham o Historiador por padrão (podem desmarcar "Seguir o Historiador").
+- **Trilha sonora:** uma lista única (links do YouTube/áudio e arquivos do computador) com ▶ em cada faixa; clicou, tocou para a sala. Aparece na aba Cenas e também na janela da nota musical.
