@@ -57,3 +57,14 @@ assets/
 - **Retrato:** ao escolher a imagem abre um editor quadrado com zoom e arrasto (o círculo mostra o token). O que você enquadra é o que aparece na ficha, no hub e na mesa.
 - **Música:** botão de nota musical na Mesa do Historiador (link do YouTube ou de áudio, biblioteca e repetir). Os jogadores ganham um mini-player com volume e mudo próprios.
 - **Visual:** hovers e animações nos botões, cartões, tokens, abas, sala e player.
+
+## Etapa 2: imagens das cenas
+
+- As imagens de cena (fundo e tokens) agora vão para o **Firebase Realtime Database** (`firebase-config.js`, `nuvem.js`), em `salas/um-anel-<CÓDIGO>/imgs`. O jogador lê direto de lá.
+- Se o Firebase falhar (regras, config ou internet), a imagem vai pela sala em **pedaços pequenos**, e o jogador pede de volta os que faltarem.
+- Ao encerrar a sala, as imagens são apagadas do banco.
+- Regras necessárias no Firebase (Realtime Database > Regras): liberar leitura e escrita em `salas/um-anel-*`. Exemplo na resposta do chat / abaixo:
+
+```json
+{ "rules": { "salas": { "$sala": { ".read": true, ".write": true } } } }
+```

@@ -117,3 +117,14 @@
 #dlg-musica button:active{transform:translateY(1px)}
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* ---------- barra no celular: abas em linha própria, botões menores ---------- */
+@media (max-width:700px){
+  .barra{display:flex!important;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.35rem}
+  .barra .abas{order:3;flex:1 1 100%;display:flex;justify-content:center;margin:0}
+  .barra .abas button{flex:1 1 0;padding:.35rem .4rem}
+  .barra .barra-dir{gap:.3rem;margin-left:auto}
+  .barra .rede-bt,.barra .tema{width:2.1rem;height:2.1rem}
+  .barra .rede-bt svg,.barra .tema svg{transform-origin:center}
+  .barra .marca{margin-right:0}
+}

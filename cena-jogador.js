@@ -14,10 +14,33 @@
     const partes = [`${t.nome}`]; if (t.res != null) partes.push(`Resistência ${t.res}/${t.resMax}`); if (t.fora) partes.push('fora de combate'); if (t.estados?.length) partes.push(t.estados.join(', '));
     el.textContent = partes.join(' · ');
   }
+  const tentativas = new Map(), parciais = new Map();
   function pedir(keys) {
-    const k = [...new Set(keys)].filter((x) => { const t = pedidas.get(x); return !t || Date.now() - t > 8000; }); if (!k.length || !gmId || !Rede.conectado()) return;
-    k.forEach((x) => pedidas.set(x, Date.now())); Rede.enviar('cena-pedir', { keys: k }, gmId);
+    const k = [...new Set(keys)].filter((x) => !imgs.has(x) && !parciais.has(x) && (!pedidas.get(x) || Date.now() - pedidas.get(x) > 6000)); if (!k.length || !gmId || !Rede.conectado()) return;
+    k.forEach((x) => {
+      pedidas.set(x, Date.now()); const t = (tentativas.get(x) || 0) + 1; tentativas.set(x, t);
+      if (t <= 8) setTimeout(() => { if (!imgs.has(x) && !parciais.has(x)) pedir([x]); }, 6500); // nada chegou: pede de novo
+    });
+    k.forEach(async (x) => { if (!window.Nuvem) return; const src = await Nuvem.ler(Rede.sala, x); if (src && !imgs.has(x)) { imgs.set(x, src); aplicar(); } });
+    Rede.enviar('cena-pedir', { keys: k }, gmId);
   }
+  function retomar(key) {
+    const m = parciais.get(key); if (!m || imgs.has(key)) return; if (++m.tent > 12) { parciais.delete(key); pedidas.delete(key); return; }
+    const faltam = []; for (let i = 0; i < m.n; i++) if (m.p[i] === undefined) faltam.push(i);
+    if (gmId && Rede.conectado()) Rede.enviar('cena-pedir', { faltam: { [key]: faltam } }, gmId); m.t = setTimeout(() => retomar(key), 3000);
+  }
+  RedeUI.on('cena-img-nuvem', async (env) => {
+    const key = env.d && env.d.key; if (!key || imgs.has(key)) return;
+    const src = window.Nuvem ? await Nuvem.ler(Rede.sala, key) : null;
+    if (src) { imgs.set(key, src); aplicar(); } else if (gmId && Rede.conectado()) Rede.enviar('cena-pedir', { keys: [key], semNuvem: true }, gmId); // nuvem falhou: pede em pedaços
+  });
+  RedeUI.on('cena-img-p', (env) => {
+    const { key, i, n, d } = env.d || {}; if (!key || imgs.has(key) || !(n > 0)) return;
+    let m = parciais.get(key); if (!m) { m = { n, p: [], cnt: 0, tent: 0 }; parciais.set(key, m); }
+    if (m.p[i] === undefined) { m.p[i] = d; m.cnt++; }
+    clearTimeout(m.t); if (m.cnt >= m.n) { parciais.delete(key); imgs.set(key, m.p.join('')); aplicar(); return; }
+    m.t = setTimeout(() => retomar(key), 2500);
+  });
   function aplicar() {
     const faltam = [];
     if (!cena) { visor.definirFundo(null); visor.definirTokens([]); $('#cena-titulo').textContent = 'Cenas'; $('#cena-combate').hidden = true; $('#cena-info').textContent = ''; return; }

@@ -127,7 +127,7 @@
   // Historiador: expulsa um jogador (ele recebe o aviso, sai da sala e não volta a ser ouvido até ser readmitido)
   R.expulsar = async (id) => { R.banidos.add(id); R.presentes.delete(id); emitir('presenca', R.presentes); try { await enviar('kick', {}, id); } catch {} };
   R.readmitir = (id) => { R.banidos.delete(id); emitir('presenca', R.presentes); };
-  R.encerrar = async () => { try { await enviar('encerrar', {}); } catch {} await espera(250); R.sair(); };
+  R.encerrar = async () => { try { await enviar('encerrar', {}); } catch {} try { window.Nuvem && Nuvem.limpar(R.sala); } catch {} await espera(250); R.sair(); };
   R.renomear = (nome) => { R.nome = nome; if (R.conectado()) anunciar(false); };
   window.Rede = R;
 })();

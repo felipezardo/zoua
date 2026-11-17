@@ -79,7 +79,7 @@
     const t = e.target;
     if (t.id === 'cena-encaixar') { C().encaixar = t.checked; salvar(); } else if (t.id === 'cena-vida') { C().mostrarVida = t.checked; salvar(); sincronizar(); } else if (t.id === 'cena-ao-vivo') { C().aoVivo = t.checked; salvar(); sincronizar(); }
     else if (t.id === 'cena-titulo-in') { C().titulo = t.value.trim() || 'Cena'; salvar(); sincronizar(); }
-    else if (t.id === 'arq-cena-img') { const f = t.files[0]; if (!f) return; try { const im = await lerImagem(f, 1600); C().fundo = { tipo: 'imagem', ...im }; C().tokens.forEach((k) => { k.x = Math.min(k.x, im.w); k.y = Math.min(k.y, im.h); }); salvar(); atualizar(); sincronizar(true); } catch { RedeUI.aviso('Não consegui ler essa imagem.'); } }
+    else if (t.id === 'arq-cena-img') { const f = t.files[0]; if (!f) return; try { const im = await lerImagem(f, 1280); C().fundo = { tipo: 'imagem', ...im }; C().tokens.forEach((k) => { k.x = Math.min(k.x, im.w); k.y = Math.min(k.y, im.h); }); salvar(); atualizar(); sincronizar(true); } catch { RedeUI.aviso('Não consegui ler essa imagem.'); } }
   });
 
   // ---------- sincronização com os jogadores ----------
@@ -93,8 +93,24 @@
     const ordem = cb.ativo ? [...LANES.flatMap(([id]) => Object.values(mesa.herois).filter((h) => (h.postura || '') === id).map((h) => ({ nome: h.nome, tp: 'h', agiu: h.agiu, fora: h.res <= 0 }))), ...mesa.advs.filter((a) => a.zona !== 'reserva' && !escondidos.has(a.id)).map((a) => ({ nome: a.nome, tp: 'a', agiu: a.agiu, fora: a.res <= 0 }))] : [];
     return { id: c.id, titulo: c.titulo, fundo, tokens, combate: { ativo: cb.ativo, rodada: cb.rodada, fase: cb.fase, ordem }, vista: c.aoVivo && visor ? visor.vista() : null };
   }
-  function enviarCena() { if (!C().ativa || !redeOn()) return; Rede.enviar('cena', dadosCena()); }
-  RedeUI.on('cena-pedir', (env) => { const d = env.d || {}; if (d.estado && C().ativa) sincronizar(true); (d.keys || []).forEach((k) => { const src = imgPorKey.get(k); if (src) Rede.enviar('cena-img', { key: k, src }, env.de); }); });
+  function enviarCena() { if (!C().ativa || !redeOn()) return; const d = dadosCena(); preSubir(d); Rede.enviar('cena', d); }
+  // Imagens vão em pedaços pequenos (cada mensagem leve chega bem nos servidores públicos). O jogador pede de volta só os que faltarem.
+  const PEDACO = 9000, pausa = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function enviarImg(key, indices, para) {
+    const src = imgPorKey.get(key); if (!src || !redeOn()) return; const n = Math.ceil(src.length / PEDACO);
+    const lista = indices && indices.length ? indices.filter((i) => i >= 0 && i < n) : Array.from({ length: n }, (_, i) => i);
+    for (const i of lista) { if (!redeOn()) return; await Rede.enviar('cena-img-p', { key, i, n, d: src.slice(i * PEDACO, (i + 1) * PEDACO) }, para); await pausa(30); }
+  }
+  // Caminho principal: a imagem vai para a nuvem (Firebase) e o jogador a lê de lá. Se a nuvem falhar, usa os pedaços.
+  async function entregarImg(key, para, semNuvem) {
+    const src = imgPorKey.get(key); if (!src || !redeOn()) return;
+    if (!semNuvem && window.Nuvem && await Nuvem.salvar(Rede.sala, key, src)) { if (redeOn()) Rede.enviar('cena-img-nuvem', { key }, para); return; }
+    enviarImg(key, null, para);
+  }
+  RedeUI.on('cena-pedir', (env) => { const d = env.d || {}; if (d.estado && C().ativa) sincronizar(true); (d.keys || []).forEach((k) => entregarImg(k, env.de, d.semNuvem)); Object.entries(d.faltam || {}).forEach(([k, idx]) => enviarImg(k, idx, env.de)); });
+  // adianta o serviço: assim que a cena é mostrada, sobe as imagens para a nuvem (o jogador já encontra tudo pronto)
+  const subidas = new Set();
+  function preSubir(d) { if (!window.Nuvem) return; [d.fundo && d.fundo.key, ...(d.tokens || []).map((t) => t.k)].filter(Boolean).forEach((k) => { if (!subidas.has(k)) { subidas.add(k); Nuvem.salvar(Rede.sala, k, imgPorKey.get(k)).then((ok) => { if (!ok) subidas.delete(k); }); } }); }
   Rede.on('presenca', () => { if (C().ativa) { const n = [...Rede.presentes.values()].filter((p) => p.papel === 'jogador').length; if (n !== (enviarCena.n || 0)) { enviarCena.n = n; sincronizar(true); } } });
   Rede.on('estado', () => { if (!redeOn() && C().ativa) { C().ativa = false; atualizar(); } });
 
