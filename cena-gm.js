@@ -21,14 +21,17 @@
     $('#v-cenas').innerHTML = `<header class="mesa-topo"><h2>Cenas</h2><div class="acoes"><button type="button" id="cena-proj" aria-pressed="false">Mostrar cena</button></div></header>
       <section class="cena-fila" aria-label="Imagens da cena"><div class="fila-topo"><h3>Imagens</h3><div class="mus-add fila-add"><label class="btn-arq">Adicionar imagens<input type="file" id="bib-arq" accept="image/*" multiple hidden></label><input id="fila-link" placeholder="…ou cole o link de uma imagem" autocomplete="off"><button type="button" id="fila-add-link">Adicionar link</button></div></div><p class="nota">Clique numa imagem ou mapa para mostrá-lo aos jogadores na hora, com a mesma vista que você está usando.</p><div id="fila-grade" class="bib-grade fila" role="list"></div></section>
       <section class="cena-fila trilha" aria-label="Trilha sonora"><div class="fila-topo"><h3>Trilha sonora</h3></div><div id="cena-trilha-corpo"></div></section>
-      <div class="cena-barra"><label class="cond-lbl"><input type="checkbox" id="cena-encaixar"> Encaixar nos hexágonos</label><label class="cond-lbl"><input type="checkbox" id="cena-vida"> Mostrar a vida dos adversários</label>
+      <div class="cena-barra"><label class="cond-lbl"><input type="checkbox" id="cena-encaixar"> Encaixar nos hexágonos</label><label class="cond-lbl"><input type="checkbox" id="cena-vida"> Mostrar a vida dos adversários</label><label class="cond-lbl"><input type="checkbox" id="cena-mover-livre"> Jogadores movem o próprio token</label>
         <label class="campo cena-tit">Título<input id="cena-titulo-in" autocomplete="off"></label></div>
       <div class="cena-grade"><div class="cena-palco"><div id="cena-visor-gm"></div><div id="cena-sel" class="cena-sel" aria-live="polite"></div></div>
         <aside class="cena-lado"><h3>Colocar na cena</h3><div id="cena-paleta"></div><div id="cena-combate-gm" class="cena-combate-gm"></div><h3>Rolagens da mesa</h3><ol id="cena-feed-gm" class="rede-feed-lista cena-feed"></ol></aside></div>`;
     visor = criarVisor($('#cena-visor-gm'), { editavel: true, vazio: 'Escolha um fundo e coloque os tokens.', encaixar: () => C().encaixar,
       aoSelecionar: (id) => { sel = id; renderSel(); }, aoAbrir: (id) => { const t = C().tokens.find((x) => x.id === id); if (t) abrirToken(t.tp, t.ref); },
       aoMover: (id, x, y) => { const t = C().tokens.find((q) => q.id === id); if (t) { t.x = x; t.y = y; salvar(); sincronizar(); } },
+      aoTraco: (t) => { const c = C(); c.desenhos = (c.desenhos || []).concat([t]).slice(-250); salvar(); sincronizar(true); },
+      aoApagar: (ids) => { const c = C(); c.desenhos = (c.desenhos || []).filter((t) => !ids.includes(t.id)); salvar(); sincronizar(true); },
       aoVista: () => { if (C().aoVivo) { clearTimeout(tVista); tVista = setTimeout(() => sincronizar(), 250); } } });
+    visor.definirTracos(C().desenhos || []); montarFerramentas(); Palco.ligar($('#cena-visor-gm'), visor, { chave: 'gm', grade: $('#v-cenas .cena-grade') });
     RedeUI.montarFeed($('#cena-feed-gm'));
     atualizar(); carregarBib(); if (window.desenharMusica) desenharMusica();
   }
@@ -40,7 +43,7 @@
     renderFila();
     $('#cena-proj').setAttribute('aria-pressed', String(c.ativa)); $('#cena-proj').textContent = c.ativa ? 'Esconder cena' : 'Mostrar cena'; $('#cena-proj').classList.toggle('on', c.ativa);
     const set = (id, v) => { const e = $('#' + id); if (e && e !== document.activeElement) e.checked = v; };
-    set('cena-encaixar', c.encaixar); set('cena-vida', c.mostrarVida); set('cena-ao-vivo', c.aoVivo); if ($('#cena-titulo-in') !== document.activeElement) $('#cena-titulo-in').value = c.titulo;
+    set('cena-encaixar', c.encaixar); set('cena-vida', c.mostrarVida); set('cena-mover-livre', c.moverLivre); set('cena-ao-vivo', c.aoVivo); if ($('#cena-titulo-in') !== document.activeElement) $('#cena-titulo-in').value = c.titulo;
     visor.definirFundo(fundoLocal()); visor.definirTokens(tokensGM()); renderPaleta(); renderSel(); renderCombateGM();
   }
   function renderPaleta() {
@@ -68,7 +71,7 @@
   function lerImagem(file, max) { return reduzirImagem(file, max).then((src) => new Promise((ok, no) => { const im = new Image(); im.onload = () => ok({ src, w: im.width, h: im.height }); im.onerror = no; im.src = src; })); }
   document.addEventListener('click', (e) => {
     const t = e.target;
-    const f = t.closest('[data-fundo]'); if (f) { const k = f.dataset.fundo; if (k === 'imagem') { abrirBibImg(); } else { C().fundo = k === 'nenhum' ? { tipo: 'nenhum' } : { tipo: 'mapa', modo: k }; salvar(); mostrar(); } return; }
+    const f = t.closest('[data-fundo]'); if (f) { const k = f.dataset.fundo; if (k === 'imagem') { abrirBibImg(); } else { const antes = C().fundo; C().fundo = k === 'nenhum' ? { tipo: 'nenhum' } : { tipo: 'mapa', modo: k }; fundoMudou(antes); salvar(); mostrar(); } return; }
     const p = t.closest('[data-pal]'); if (p) { const [tp, ref] = p.dataset.pal.split(':'); colocar(tp, ref); return; }
     const s = t.closest('[data-csel]'); if (s) { const tk = C().tokens.find((x) => x.id === sel); if (!tk) return; const k = s.dataset.csel;
       if (k === 'abrir') abrirToken(tk.tp, tk.ref); else if (k === 'maior') tk.esc = Math.min(4, +((tk.esc || 1) + 0.25).toFixed(2)); else if (k === 'menor') tk.esc = Math.max(0.5, +((tk.esc || 1) - 0.25).toFixed(2)); else if (k === 'ocultar') tk.oculto = !tk.oculto; else if (k === 'remover') { C().tokens = C().tokens.filter((x) => x.id !== sel); sel = null; visor.selecionar(null); }
@@ -78,12 +81,39 @@
   });
   document.addEventListener('change', async (e) => {
     const t = e.target;
-    if (t.id === 'cena-encaixar') { C().encaixar = t.checked; salvar(); } else if (t.id === 'cena-vida') { C().mostrarVida = t.checked; salvar(); sincronizar(); } else if (t.id === 'cena-ao-vivo') { C().aoVivo = t.checked; salvar(); sincronizar(); }
+    if (t.id === 'cena-encaixar') { C().encaixar = t.checked; salvar(); } else if (t.id === 'cena-vida') { C().mostrarVida = t.checked; salvar(); sincronizar(); } else if (t.id === 'cena-ao-vivo') { C().aoVivo = t.checked; salvar(); sincronizar(); } else if (t.id === 'cena-mover-livre') { C().moverLivre = t.checked; salvar(); sincronizar(true); RedeUI.aviso(t.checked ? 'Os jogadores agora movem o próprio token.' : 'Só você move os tokens.'); }
     else if (t.id === 'cena-titulo-in') { C().titulo = t.value.trim() || 'Cena'; salvar(); sincronizar(); }
     else if (t.id === 'arq-cena-img') { const f = t.files[0]; if (!f) return; try { const im = await lerImagem(f, 1280); C().fundo = { tipo: 'imagem', ...im }; C().tokens.forEach((k) => { k.x = Math.min(k.x, im.w); k.y = Math.min(k.y, im.h); }); salvar(); atualizar(); sincronizar(true); } catch { RedeUI.aviso('Não consegui ler essa imagem.'); } }
   });
 
   // ---------- sincronização com os jogadores ----------
+  // ---------- ferramentas sobre a cena: mover, desenhar, apagar ----------
+  const CORES = [['#b3322c', 'Vermelho'], ['#2a1c14', 'Tinta escura'], ['#f2e9d4', 'Papel'], ['#b08a45', 'Ouro velho']];
+  let ferr = { tipo: 'mao', cor: CORES[0][0], esp: 3 };
+  function montarFerramentas() {
+    const box = $('#cena-visor-gm'); if (box.querySelector('.visor-ferr')) return;
+    box.insertAdjacentHTML('beforeend', `<div class="visor-ferr" role="toolbar" aria-label="Ferramentas da cena">
+      <button type="button" data-f="mao" class="on" aria-pressed="true" title="Mover tokens e a vista">Mover</button><button type="button" data-f="pena" aria-pressed="false" title="Desenhar sobre a cena (os jogadores veem)">Desenhar</button><button type="button" data-f="borracha" aria-pressed="false" title="Apagar traços">Borracha</button>
+      <span class="ferr-opc" hidden><span class="ferr-cores">${CORES.map(([c, n], i) => `<button type="button" class="cor${i ? '' : ' on'}" data-cor="${c}" style="--c:${c}" aria-label="${n}" title="${n}"></button>`).join('')}</span><input type="range" id="ferr-esp" min="1" max="10" value="3" aria-label="Espessura do traço" title="Espessura"></span>
+      <button type="button" data-f="desfazer" title="Desfazer o último traço">Desfazer</button><button type="button" data-f="limpar" title="Apagar todos os desenhos">Limpar</button></div>`);
+    box.querySelector('.visor-ferr').addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.cor) { ferr.cor = b.dataset.cor; box.querySelectorAll('.cor').forEach((x) => x.classList.toggle('on', x === b)); if (ferr.tipo !== 'pena') escolher('pena'); else visor.modoDesenho({ tipo: 'pena', cor: ferr.cor, esp: ferr.esp }); return; }
+      const f = b.dataset.f; if (f === 'desfazer') { if (!visor.desfazerTraco()) RedeUI.aviso('Não há traços para desfazer.'); }
+      else if (f === 'limpar') { if (visor.tracos().length) confirmar('Apagar os desenhos?', 'Todos os traços desta cena somem para você e para os jogadores.', () => visor.limparTracos(), 'Apagar'); }
+      else escolher(f);
+    });
+    box.querySelector('#ferr-esp').addEventListener('input', (e) => { ferr.esp = +e.target.value; if (ferr.tipo === 'pena') visor.modoDesenho({ tipo: 'pena', cor: ferr.cor, esp: ferr.esp }); });
+  }
+  function escolher(f) {
+    ferr.tipo = f; const box = $('#cena-visor-gm');
+    box.querySelectorAll('[data-f="mao"],[data-f="pena"],[data-f="borracha"]').forEach((b) => { const on = b.dataset.f === f; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+    box.querySelector('.ferr-opc').hidden = f !== 'pena';
+    visor.modoDesenho(f === 'pena' ? { tipo: 'pena', cor: ferr.cor, esp: ferr.esp } : f === 'borracha' ? { tipo: 'borracha' } : null);
+  }
+  const identFundo = (f) => (f ? JSON.stringify([f.tipo, f.modo, f.lib, f.w, f.h, (f.src || '').length]) : '');
+  function fundoMudou(antes) { if (identFundo(antes) !== identFundo(C().fundo) && (C().desenhos || []).length) { C().desenhos = []; visor.definirTracos([]); } }
+
   // ---------- fila de imagens: um clique mostra a imagem aos jogadores ----------
   let bibImgs = [];
   const MAPAS = [['jogadores', 'Mapa dos jogadores', 'assets/eriador.webp'], ['historiador', 'Mapa do Historiador', 'assets/eriador-historiador.webp']];
@@ -102,7 +132,7 @@
   }
   async function usarImgBib(id) {
     const it = await Biblioteca.obter(id); if (!it) return RedeUI.aviso('Imagem não encontrada.');
-    C().fundo = { tipo: 'imagem', src: it.src, w: it.w, h: it.h, lib: it.id }; C().tokens.forEach((k) => { k.x = Math.min(k.x, it.w); k.y = Math.min(k.y, it.h); });
+    const antes = C().fundo; C().fundo = { tipo: 'imagem', src: it.src, w: it.w, h: it.h, lib: it.id }; fundoMudou(antes); C().tokens.forEach((k) => { k.x = Math.min(k.x, it.w); k.y = Math.min(k.y, it.h); });
     salvar(); mostrar();
   }
   async function adicionarLinkImg() {
@@ -136,7 +166,7 @@
     const tokens = tokensGM().filter((t) => !t.oculto).map((t) => { const vida = t.tp === 'h' || c.mostrarVida; return { id: t.id, tp: t.tp, nome: t.nome, x: t.x, y: t.y, esc: t.esc, cor: t.cor, k: chaveImg(t.img), pct: vida ? t.pct : null, res: vida ? t.res : null, resMax: vida ? t.resMax : null, fora: t.fora, badges: t.tp === 'h' ? t.badges : [], estados: t.tp === 'h' ? t.estados : [] }; });
     const cb = mesa.combate, escondidos = new Set(c.tokens.filter((t) => t.tp === 'a' && t.oculto).map((t) => t.ref));
     const ordem = cb.ativo ? [...LANES.flatMap(([id]) => Object.values(mesa.herois).filter((h) => (h.postura || '') === id).map((h) => ({ nome: h.nome, tp: 'h', agiu: h.agiu, fora: h.res <= 0 }))), ...mesa.advs.filter((a) => a.zona !== 'reserva' && !escondidos.has(a.id)).map((a) => ({ nome: a.nome, tp: 'a', agiu: a.agiu, fora: a.res <= 0 }))] : [];
-    return { id: c.id, titulo: c.titulo, fundo, tokens, combate: { ativo: cb.ativo, rodada: cb.rodada, fase: cb.fase, ordem }, vista: c.aoVivo && visor ? visor.vista() : null };
+    return { id: c.id, titulo: c.titulo, fundo, tokens, desenhos: c.desenhos || [], moverLivre: !!c.moverLivre, encaixar: !!c.encaixar, combate: { ativo: cb.ativo, rodada: cb.rodada, fase: cb.fase, ordem }, vista: c.aoVivo && visor ? visor.vista() : null };
   }
   function enviarCena() { if (!C().ativa || !redeOn()) return; const d = dadosCena(); preSubir(d); Rede.enviar('cena', d); }
   // Imagens vão em pedaços pequenos (cada mensagem leve chega bem nos servidores públicos). O jogador pede de volta só os que faltarem.
@@ -153,6 +183,14 @@
     enviarImg(key, null, para);
   }
   RedeUI.on('cena-pedir', (env) => { const d = env.d || {}; if (d.estado && C().ativa) sincronizar(true); (d.keys || []).forEach((k) => entregarImg(k, env.de, d.semNuvem)); Object.entries(d.faltam || {}).forEach(([k, idx]) => enviarImg(k, idx, env.de)); });
+  // jogador move o próprio token (só quando o Historiador liga essa opção)
+  RedeUI.on('token-mover', (env) => {
+    const d = env.d || {}; if (!C().moverLivre || !C().ativa || !isFinite(d.x) || !isFinite(d.y)) return;
+    const t = C().tokens.find((q) => q.id === d.id); if (!t || t.tp !== 'h') return; const h = mesa.herois[t.ref];
+    if (!h || String(h.nome).trim() !== String(d.heroi || '').trim()) return; // cada um só move o próprio herói
+    t.x = Math.round(d.x); t.y = Math.round(d.y); salvar(); atualizar();
+    const dd = dadosCena(); dd.vista = null; if (redeOn()) Rede.enviar('cena', dd); // sem mexer na vista de ninguém
+  });
   // adianta o serviço: assim que a cena é mostrada, sobe as imagens para a nuvem (o jogador já encontra tudo pronto)
   const subidas = new Set();
   function preSubir(d) { if (!window.Nuvem) return; [d.fundo && d.fundo.key, ...(d.tokens || []).map((t) => t.k)].filter(Boolean).forEach((k) => { if (!subidas.has(k)) { subidas.add(k); Nuvem.salvar(Rede.sala, k, imgPorKey.get(k)).then((ok) => { if (!ok) subidas.delete(k); }); } }); }

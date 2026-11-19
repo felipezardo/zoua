@@ -24,6 +24,7 @@
     raiz.classList.add('visor'); raiz.innerHTML = '<canvas tabindex="0" role="img" aria-label="Cena com mapa ou imagem e tokens. Arraste para mover, use dois dedos ou a roda do mouse para o zoom."></canvas><div class="visor-msg" hidden></div>';
     const cv = raiz.querySelector('canvas'), ctx = cv.getContext('2d'), msg = raiz.querySelector('.visor-msg');
     let vw = 0, vh = 0, dpr = 1, k = 0.1, tx = 0, ty = 0, fundo = null, tokens = [], sel = null, quadro = 0, iniciado = false, vistaPendente = null;
+    let tracos = [], modo = null, tracando = null, apagando = null; // desenhos do Historiador sobre a cena (coordenadas da imagem)
     const V = { opc };
     const dims = () => (fundo ? [fundo.w, fundo.h] : [1000, 700]);
     const kMin = () => { const [w, h] = dims(); return Math.min(vw / w, vh / h) || 0.1; };
@@ -37,10 +38,20 @@
         if (!vw) return; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#d9cbab'; ctx.fillRect(0, 0, vw, vh);
         if (fundo) { const src = fundo.tipo === 'mapa' ? MAPAS[fundo.modo] || MAPAS.jogadores : fundo.src; const im = imagem(src, desenhar); if (im) { ctx.imageSmoothingQuality = 'high'; ctx.drawImage(im, tx, ty, fundo.w * k, fundo.h * k); } }
         msg.hidden = !!fundo; if (!fundo) msg.textContent = opc.vazio || 'Nenhuma cena em exibição.';
+        desenharTracos();
         const ordem = tokens.slice().sort((a, b) => (a.id === sel) - (b.id === sel));
         for (const t of ordem) desenharToken(t);
       });
     }
+    const larguraTraco = (e) => Math.max(1, (e || 3) * dims()[0] / 1200); // espessura em pixels da imagem (acompanha o zoom)
+    function caminho(t) { ctx.beginPath(); t.p.forEach(([x, y], i) => (i ? ctx.lineTo(x * k + tx, y * k + ty) : ctx.moveTo(x * k + tx, y * k + ty))); if (t.p.length === 1) ctx.lineTo(t.p[0][0] * k + tx + 0.1, t.p[0][1] * k + ty); }
+    function desenharTracos() {
+      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (const t of tracos.concat(tracando ? [tracando] : [])) { if (!t.p.length) continue; ctx.strokeStyle = t.c; ctx.lineWidth = Math.max(1.5, larguraTraco(t.e) * k); if (apagando && apagando.ids.has(t.id)) ctx.globalAlpha = 0.3; caminho(t); ctx.stroke(); ctx.globalAlpha = 1; }
+      ctx.restore();
+    }
+    const distSeg = (px, py, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy, u = l ? Math.max(0, Math.min(1, ((px - a[0]) * dx + (py - a[1]) * dy) / l)) : 0; return Math.hypot(px - (a[0] + u * dx), py - (a[1] + u * dy)); };
+    const tracoPerto = (ix, iy, raio) => tracos.filter((t) => t.p.some((q, i) => (i ? distSeg(ix, iy, t.p[i - 1], q) : Math.hypot(ix - q[0], iy - q[1])) <= raio + larguraTraco(t.e) / 2));
     function desenharToken(t) {
       const x = t.x * k + tx, y = t.y * k + ty, r = raioTk(t); if (x < -r - 60 || y < -r - 60 || x > vw + r + 60 || y > vh + r + 60) return;
       const lw = Math.max(3, r * 0.17); ctx.save(); if (t.fora) ctx.globalAlpha = 0.5; if (t.oculto) ctx.globalAlpha = 0.45;
@@ -48,11 +59,12 @@
       ctx.save(); ctx.beginPath(); ctx.arc(x, y, r - lw * 0.6, 0, Math.PI * 2); ctx.clip();
       const im = imagem(t.img, desenhar);
       if (im) { const s = Math.max((2 * r) / im.width, (2 * r) / im.height); ctx.drawImage(im, x - (im.width * s) / 2, y - (im.height * s) / 2, im.width * s, im.height * s); }
-      else { const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.1, x, y, r); g.addColorStop(0, '#c9a98a'); g.addColorStop(1, t.cor || '#5a4a3a'); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.fillStyle = '#fff8e8'; ctx.font = `700 ${r * 0.8}px Cinzel, Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(iniciais(t.nome), x, y + r * 0.04); }
+      else { ctx.fillStyle = t.cor || '#5a4a3a'; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.fillStyle = '#fff8e8'; ctx.font = `700 ${r * 0.8}px Cinzel, Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(iniciais(t.nome), x, y + r * 0.04); }
       ctx.restore();
       ctx.lineWidth = lw; ctx.beginPath(); ctx.arc(x, y, r - lw / 2, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.stroke();
       if (t.pct != null) { ctx.beginPath(); ctx.arc(x, y, r - lw / 2, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * Math.max(0, Math.min(100, t.pct))) / 100); ctx.strokeStyle = corPct(t.pct); ctx.stroke(); }
       else { ctx.beginPath(); ctx.arc(x, y, r - lw / 2, 0, Math.PI * 2); ctx.strokeStyle = t.cor || '#5a4a3a'; ctx.stroke(); }
+      if (t.meu) { ctx.fillStyle = '#fff3c2'; ctx.strokeStyle = '#2a1c14'; ctx.lineWidth = 1.5; const dy = y - r - 9; ctx.beginPath(); ctx.moveTo(x, dy - 6); ctx.lineTo(x + 6, dy); ctx.lineTo(x, dy + 6); ctx.lineTo(x - 6, dy); ctx.closePath(); ctx.fill(); ctx.stroke(); }
       if (t.id === sel) { ctx.lineWidth = 3; ctx.strokeStyle = '#fff3c2'; ctx.beginPath(); ctx.arc(x, y, r + 3, 0, Math.PI * 2); ctx.stroke(); ctx.strokeStyle = '#b3322c'; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
       (t.badges || []).slice(0, 3).forEach((b, i) => { const bx = x + r * 0.78, by = y - r * 0.55 + i * 15; ctx.fillStyle = '#b3322c'; ctx.beginPath(); ctx.arc(bx, by, 7, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '700 9px Georgia'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(b, bx, by + 0.5); });
       ctx.restore();
@@ -71,6 +83,11 @@
     };
     V.definirTokens = (l) => { tokens = l.map((t) => { const n = { ...t }; if (arrasto && n.id === arrasto.id) { const o = tokens.find((q) => q.id === n.id); if (o) { n.x = o.x; n.y = o.y; } } return n; }); desenhar(); };
     V.selecionar = (id) => { sel = id; desenhar(); };
+    V.definirTracos = (l) => { tracos = (l || []).map((t) => ({ id: t.id, c: t.c, e: t.e, p: t.p })); desenhar(); };
+    V.tracos = () => tracos.slice();
+    V.modoDesenho = (m) => { modo = m; tracando = null; apagando = null; raiz.classList.toggle('desenhando', !!m); cv.style.cursor = m ? (m.tipo === 'borracha' ? 'cell' : 'crosshair') : ''; desenhar(); };
+    V.desfazerTraco = () => { const t = tracos.pop(); if (t) { desenhar(); opc.aoApagar && opc.aoApagar([t.id]); } return !!t; };
+    V.limparTracos = () => { const ids = tracos.map((t) => t.id); tracos = []; desenhar(); if (ids.length) opc.aoApagar && opc.aoApagar(ids); };
     V.selecionado = () => sel;
     V.telaDe = (x, y) => [x * k + tx, y * k + ty];
     V.token = (id) => tokens.find((t) => t.id === id);
@@ -89,12 +106,20 @@
     const acharToken = (sx, sy) => { for (let i = tokens.length - 1; i >= 0; i--) { const t = tokens[i], r = raioTk(t), dx = sx - (t.x * k + tx), dy = sy - (t.y * k + ty); if (dx * dx + dy * dy <= r * r) return t; } return null; };
     cv.addEventListener('pointerdown', (e) => {
       try { cv.setPointerCapture(e.pointerId); } catch {} const [x, y] = pos(e); ponteiros.set(e.pointerId, { x, y });
-      if (ponteiros.size === 1) { const t = acharToken(x, y); toque = { x, y, t0: performance.now(), moveu: false, tx0: tx, ty0: ty, token: t }; if (t && opc.editavel) { arrasto = { id: t.id, dx: t.x - (x - tx) / k, dy: t.y - (y - ty) / k }; } }
-      else { toque && (toque.moveu = true); arrasto = null; const [a, b] = [...ponteiros.values()]; pinca = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, k0: k }; }
+      if (ponteiros.size === 1 && modo) { const [ix, iy] = paraImg(x, y); toque = { x, y, t0: performance.now(), moveu: true, tx0: tx, ty0: ty, token: null };
+        if (modo.tipo === 'borracha') apagando = { ids: new Set(), raio: 12 / k }; else tracando = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), c: modo.cor, e: modo.esp, p: [[Math.round(ix), Math.round(iy)]] };
+        if (apagando) tracoPerto(ix, iy, apagando.raio).forEach((q) => apagando.ids.add(q.id));
+        cv.classList.add('arrastando'); desenhar(); return; }
+      if (ponteiros.size === 1) { const t = acharToken(x, y); toque = { x, y, t0: performance.now(), moveu: false, tx0: tx, ty0: ty, token: t }; if (t && !modo && (opc.editavel || (opc.podeMover && opc.podeMover(t)))) { arrasto = { id: t.id, dx: t.x - (x - tx) / k, dy: t.y - (y - ty) / k }; } }
+      else { tracando = null; apagando = null; toque && (toque.moveu = true); arrasto = null; const [a, b] = [...ponteiros.values()]; pinca = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, k0: k }; }
       cv.classList.add('arrastando');
     });
     cv.addEventListener('pointermove', (e) => {
       if (!ponteiros.has(e.pointerId)) return; const [x, y] = pos(e); ponteiros.set(e.pointerId, { x, y });
+      if (ponteiros.size === 1 && (tracando || apagando)) { const [ix, iy] = paraImg(x, y);
+        if (tracando) { const u = tracando.p[tracando.p.length - 1]; if (Math.hypot(ix - u[0], iy - u[1]) * k >= 2.5) tracando.p.push([Math.round(ix), Math.round(iy)]); }
+        else tracoPerto(ix, iy, apagando.raio).forEach((q) => apagando.ids.add(q.id));
+        desenhar(); return; }
       if (ponteiros.size === 2 && pinca) { const [a, b] = [...ponteiros.values()]; zoomEm((a.x + b.x) / 2, (a.y + b.y) / 2, pinca.k0 * Math.hypot(a.x - b.x, a.y - b.y) / pinca.d); }
       else if (ponteiros.size === 1 && toque) {
         if (!toque.moveu && Math.hypot(x - toque.x, y - toque.y) > 6) toque.moveu = true;
@@ -103,6 +128,8 @@
     });
     const fim = (e) => {
       const era = ponteiros.size; ponteiros.delete(e.pointerId);
+      if (era === 1 && tracando) { const t = tracando; tracando = null; if (e.type === 'pointerup') { tracos.push(t); opc.aoTraco && opc.aoTraco({ id: t.id, c: t.c, e: t.e, p: t.p }); } desenhar(); }
+      else if (era === 1 && apagando) { const ids = [...apagando.ids]; apagando = null; if (ids.length && e.type === 'pointerup') { tracos = tracos.filter((t) => !ids.includes(t.id)); opc.aoApagar && opc.aoApagar(ids); } desenhar(); }
       if (era === 1 && toque) {
         if (arrasto && toque.moveu) { const t = tokens.find((q) => q.id === arrasto.id); if (t) { if (opc.encaixar && opc.encaixar() && fundo && fundo.tipo === 'mapa') { const h = hexEm(t.x, t.y); if (h) { [t.x, t.y] = centroHex(...h); } } desenhar(); opc.aoMover && opc.aoMover(t.id, Math.round(t.x), Math.round(t.y), true); } }
         else if (!toque.moveu && performance.now() - toque.t0 < 700 && e.type === 'pointerup') {

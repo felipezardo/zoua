@@ -105,3 +105,11 @@ Acrescente o bloco `"um-anel"` ao lado do `"salas"` que já existe:
 } } }
 ```
 Use **Encerrar sala** ao fim da sessão: apaga do banco as imagens, áudios e mensagens da sala.
+
+## Etapa 6: visual do livro, ferramentas da cena
+
+- **Visual (`livro.css`, `livro.js`)**: cantos retos, filetes vermelhos finos e duplos, papel liso, sem sombras suaves nem degradês; só tokens e rostos continuam redondos. O ornamento das margens em telas largas (≥1500 px) foi extraído da página de capítulo do livro (`assets/livro/`).
+- **Painéis arrastáveis (`arrastar.js`)**: Rolagem, Rolagens da mesa, música e pedidos de ataque se movem pelo cabeçalho; duplo clique devolve ao lugar. A posição fica guardada.
+- **Cena ajustável (`palco.js`)**: botões de zoom, "Ajustar" e tela cheia; alça embaixo muda a altura e divisória muda a largura (duplo clique restaura).
+- **Desenho na cena**: o Historiador desenha (várias cores e espessuras), apaga com a borracha, desfaz e limpa; os jogadores veem na hora. Os desenhos somem quando o fundo da cena muda.
+- **Token do jogador**: caixa "Jogadores movem o próprio token" (liga/desliga). O jogador só move o próprio herói (marcado com um losango).

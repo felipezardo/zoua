@@ -32,7 +32,7 @@
 @media (hover:hover){.barra .rede-bt:hover svg{transform:rotate(-8deg) scale(1.08)}.feed-bt:hover svg{transform:rotate(60deg) scale(1.08)!important}}
 .barra .feed-bt[hidden]{display:none}
 .rede-n{animation:surgir .25s var(--ease)}
-.rede-n.pessoas{background:#2c6b2f}
+.rede-n.pessoas{background:var(--ok)}
 .musica-bt.ativo{background:#ffffff26;border-color:#fff}
 .musica-bt.ativo svg{animation:musica-balanca 1.6s ease-in-out infinite}
 .musica-bt .rede-dot{display:none}
@@ -134,8 +134,8 @@
 .bib-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(8.5rem,1fr));gap:.6rem;margin:.6rem 0;max-height:52vh;overflow:auto;padding:.2rem}
 .bib-item{position:relative;margin:0;border:2px solid var(--tinta);border-radius:8px;overflow:hidden;background:var(--campo);transition:transform .2s var(--ease),box-shadow .2s,border-color .2s;animation:surgir .25s var(--ease) both}
 @media (hover:hover){.bib-item:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 6px 14px #0004}}
-.bib-item.on{border-color:#2c6b2f;box-shadow:0 0 0 3px #2c6b2f55}
-.bib-item.on::after{content:"Em uso";position:absolute;top:.3rem;left:.3rem;background:#2c6b2f;color:#fff;font:700 .65rem var(--titulo);padding:.1rem .4rem;border-radius:999px}
+.bib-item.on{border-color:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 35%,transparent)}
+.bib-item.on::after{content:"Em uso";position:absolute;top:.3rem;left:.3rem;background:var(--ok);color:#fff;font:700 .65rem var(--titulo);padding:.1rem .4rem;border-radius:999px}
 .bib-usar{display:block;width:100%;padding:0;border:0;background:#0001;cursor:pointer;aspect-ratio:4/3}
 .bib-usar img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s var(--ease)}
 @media (hover:hover){.bib-usar:hover img{transform:scale(1.08)}}
@@ -160,12 +160,12 @@
 .mus-faixas{list-style:none;margin:.4rem 0;padding:0;display:grid;gap:.15rem}
 .mus-faixa{display:flex;align-items:center;gap:.6rem;padding:.3rem .4rem;border-bottom:1px dotted #0004;border-radius:6px;transition:background .15s;animation:surgir .25s var(--ease) both}
 @media (hover:hover){.mus-faixa:hover{background:#b3322c12}}
-.mus-faixa.on{background:#2c6b2f1a}
+.mus-faixa.on{background:color-mix(in srgb,var(--ok) 12%,transparent)}
 .mus-nome{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:.5rem}
 .mus-faixa small{opacity:.7;white-space:nowrap}
 .mus-play{width:2.3rem;height:2.3rem;border-radius:6px;border:1.5px solid var(--tinta);background:transparent;color:var(--tinta);cursor:pointer;font-size:.9rem;padding:0;transition:background .15s,color .15s,transform .12s var(--ease)}
 @media (hover:hover){.mus-play:hover{background:var(--tinta);color:var(--sobre-tinta);transform:scale(1.08)}}
-.mus-faixa.on .mus-play{background:#2c6b2f;border-color:#2c6b2f;color:#fff}
+.mus-faixa.on .mus-play{background:var(--ok);border-color:var(--ok);color:#fff}
 .mus-x{border:0;background:transparent;color:var(--tinta);font-size:1.2rem;cursor:pointer;opacity:.5;transition:opacity .15s,transform .15s,color .15s;padding:0 .3rem}
 .mus-x:hover{opacity:1;color:#8a2a24;transform:scale(1.2)}
 /* o estilo global de <button> é vermelho: estes botões precisam do próprio visual */
@@ -173,7 +173,7 @@
 .bib-item .bib-x{background:#000b!important;color:#fff!important;border:0!important;box-shadow:none!important;min-height:0}
 .bib-item .bib-x:hover{background:#8a2a24!important}
 .mus-faixa .mus-play{background:transparent!important;color:var(--tinta)!important;border:1.5px solid var(--tinta)!important;box-shadow:none!important;min-height:0}
-.mus-faixa.on .mus-play{background:#2c6b2f!important;border-color:#2c6b2f!important;color:#fff!important}
+.mus-faixa.on .mus-play{background:var(--ok)!important;border-color:var(--ok)!important;color:#fff!important}
 @media (hover:hover){.mus-faixa:not(.on) .mus-play:hover{background:var(--tinta)!important;color:var(--sobre-tinta)!important}}
 .mus-faixa .mus-x{background:transparent!important;color:var(--tinta)!important;border:0!important;box-shadow:none!important;min-height:0}
 .mus-faixa .mus-x:hover{color:#8a2a24!important}

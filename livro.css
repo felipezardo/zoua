@@ -1,0 +1,110 @@
+/* ============ Estilo do livro: cantos retos, filetes vermelhos, papel liso, sem sombras nem degradês ============
+   Carregado por último. O livro usa filete fino ou duplo em vermelho, títulos em versalete, losangos e ornamento de linha.
+   Nada de cantos arredondados, sombras suaves ou degradês. Só os tokens e retratos de rosto continuam redondos. */
+:root{--ok:#4a5d23;--veu:rgba(42,28,20,.8);--filete:1px solid var(--tinta);--duplo:3px double var(--tinta)}
+
+/* cantos retos e superfícies chapadas */
+*,*::before,*::after{border-radius:0!important;box-shadow:none!important;text-shadow:none!important}
+.av,.av *,[class^="tk-"],[class*=" tk-"],.enq-guia,.atq-pulso,.rede-dot,.mus-eq i{border-radius:50%!important}
+.av{background:var(--cor,#5a4636)!important}
+.retrato::after{background:var(--tinta)!important;color:#fff!important}
+.mus-eq i{border-radius:0!important}
+
+/* sem "levantar" ao passar o mouse: o livro é plano. O retorno é troca de cor (preenche de vermelho) */
+@media (hover:hover){
+  .card-heroi:hover,.card-adv:hover,.card-ficha:hover,.bib-item:hover,.pal-item:hover,.rede-toast:hover,.atq-arma:hover,.mus-play:hover,.dado:hover,.stp button:hover,.mus-add button:hover,.btn-arq:hover,.fila-add button:hover,.barra .rede-bt:hover,.enq-zoom button:hover,.mus-x:hover,.bib-x:hover,.cond-btn:hover,.chip-cat:hover,.mesa-topo .acoes button:hover,.visor-zoom button:hover,.visor-ferr button:hover{transform:none!important}
+  .barra .rede-bt:hover svg,.feed-bt:hover svg,.bib-usar:hover img,.retrato:hover img{transform:none!important}
+  .card-heroi:hover,.card-adv:hover,.card-ficha:hover,.bib-item:hover{border-color:var(--tinta);outline:1px solid var(--tinta);outline-offset:-4px}
+}
+
+/* barra superior */
+.barra .abas{border:1px solid var(--barra-t);padding:0;background:transparent}
+.barra .abas button{padding:.4rem 1rem;border:0;font-family:var(--titulo);letter-spacing:.06em;text-transform:uppercase;font-size:.78rem;color:var(--barra-t);background:transparent}
+.barra .abas button.on,.barra .abas button[aria-selected="true"]{background:var(--tinta);color:#fff}
+.barra .rede-bt,.barra .tema,.barra .voltar,.barra button.voltar{width:2.3rem;height:2.3rem;padding:0;border:1px solid var(--barra-t);background:transparent;color:var(--barra-t)}
+.barra .voltar,.barra button.voltar{width:auto;padding:0 .8rem;font-family:var(--titulo);letter-spacing:.05em;text-transform:uppercase;font-size:.78rem}
+@media (hover:hover){.barra .rede-bt:hover,.barra .tema:hover,.barra .voltar:hover{background:var(--barra-t);color:var(--barra)}}
+.barra .rede-n{background:var(--tinta);color:#fff;border:1px solid var(--barra)}
+
+/* botões: retangulares, filete vermelho; o principal é cheio */
+button,.btn,.btn-arq{border-radius:0}
+.mus-add button,.btn-arq,.fila-add button,.visor-zoom button,.visor-ferr button,.mapa-barra button,.atq-arma,.enq-zoom button,#enq-centro,#enq-cancelar{border-radius:0;letter-spacing:.03em}
+.mapa-barra button{border:1.5px solid var(--tinta);padding:.3rem .8rem}
+.mapa-barra button[aria-pressed="true"],.mapa-barra button[aria-checked="true"],.mapa-barra button.on{background:var(--tinta);color:#fff}
+.cond-btn,.chip-cat{border:1px solid var(--tinta)}
+
+/* painéis flutuantes: papel opaco, filete duplo, arrastáveis pelo cabeçalho */
+.rolagem,.rede-feed,.musica-mini,.atq-card,.cena-atq,.visor-ferr,.visor-zoom{background:var(--papel);color:var(--texto);border:var(--duplo);opacity:1}
+.musica-mini{color:var(--texto);padding:.3rem .5rem;border-width:3px}
+.musica-mini button{color:var(--texto);border:1px solid var(--tinta);background:transparent}
+@media (hover:hover){.musica-mini button:hover{background:var(--tinta);color:#fff}}
+.mm-titulo{color:var(--texto)}
+.rede-toast{background:var(--barra);color:var(--barra-t);border:1px solid var(--tinta)}
+.arrastavel{cursor:grab;touch-action:none;user-select:none}
+.arrastavel.arrastando{cursor:grabbing}
+.rolagem.movido,.rede-feed.movido,.musica-mini.movido,.ataque-fila.movido{animation:none}
+.r-topo.arrastavel::before,.rede-feed-topo.arrastavel::before{content:"◆";font-size:.55rem;color:var(--tinta);margin-right:.45rem;opacity:.8}
+dialog{border:var(--duplo)}
+dialog::backdrop{background:var(--veu)}
+
+/* cartões e listas: filete fino, sem cantos */
+.cena-fila,.card-heroi,.card-adv,.card-ficha,.mus-agora,.res-card,.bib-item,.lane,.zona,.pal-item{border-radius:0}
+.cena-fila{border:var(--filete);outline:1px solid var(--tinta);outline-offset:-5px;background:var(--papel);padding:.8rem 1rem}
+.cena-fila h3,.fila-topo h3{font-variant:small-caps;letter-spacing:.05em}
+.bib-item{border:var(--filete);background:var(--papel)}
+.bib-item.on{border:2px solid var(--tinta)}
+.bib-item.on::after{background:var(--tinta);color:#fff;font-variant:small-caps;letter-spacing:.04em}
+.mus-faixa{border-bottom:1px solid var(--linha)}
+.mus-faixa.on .mus-play{background:var(--tinta)!important;border-color:var(--tinta)!important}
+.mus-play{border-radius:0}
+
+/* ferramentas sobre a cena (Historiador) e zoom/tela cheia (todos) */
+.visor{position:relative}
+.visor-ferr{position:absolute;left:.5rem;top:.5rem;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:.3rem;max-width:calc(100% - 7.5rem);padding:.3rem;border-width:3px}
+.visor-ferr button{font:600 .72rem var(--titulo);text-transform:uppercase;padding:.28rem .55rem;border:1px solid var(--tinta);background:transparent;color:var(--tinta);cursor:pointer}
+.visor-ferr button.on,.visor-ferr button[aria-pressed="true"]{background:var(--tinta);color:#fff}
+@media (hover:hover){.visor-ferr button:not(.on):hover,.visor-zoom button:hover{background:var(--tinta);color:#fff}}
+.ferr-opc{display:inline-flex;align-items:center;gap:.4rem}
+.ferr-opc[hidden]{display:none}
+.ferr-cores{display:inline-flex;gap:.25rem}
+.visor-ferr .cor{width:1.35rem;height:1.35rem;padding:0;background:var(--c);border:1px solid var(--texto);min-height:0}
+.visor-ferr .cor.on{outline:2px solid var(--tinta);outline-offset:2px}
+.visor-ferr #ferr-esp{width:5rem;accent-color:var(--tinta);border:0;padding:0}
+.visor-zoom{position:absolute;right:.5rem;top:.5rem;z-index:3;display:flex;flex-direction:column;gap:.25rem;padding:.25rem;border-width:3px}
+.visor-zoom button{font:600 .72rem var(--titulo);text-transform:uppercase;padding:.28rem .5rem;border:1px solid var(--tinta);background:transparent;color:var(--tinta);cursor:pointer;min-width:2rem}
+.visor.desenhando{outline:2px dashed var(--tinta);outline-offset:-4px}
+.visor:fullscreen{height:100vh!important;max-height:none;background:var(--fundo)}
+.visor:fullscreen~.palco-alca{display:none}
+
+/* alças para ajustar a cena: altura (embaixo) e largura (entre a cena e a coluna) */
+.palco-alca{height:14px;margin:2px 0 6px;cursor:ns-resize;position:relative;touch-action:none;display:grid;place-items:center;border-top:1px solid var(--linha)}
+.palco-alca::before{content:"◆  ◆  ◆";font-size:.5rem;letter-spacing:.2em;color:var(--tinta);opacity:.55;line-height:1}
+.palco-divisor{cursor:ew-resize;touch-action:none;display:none;place-items:center;border-left:1px solid var(--linha);border-right:1px solid var(--linha);margin:0 .4rem}
+.palco-divisor::before{content:"◆\A◆\A◆";white-space:pre;text-align:center;font-size:.5rem;line-height:1.6;color:var(--tinta);opacity:.55}
+@media (hover:hover){.palco-alca:hover::before,.palco-divisor:hover::before,.palco-alca.arrastando::before,.palco-divisor.arrastando::before{opacity:1}}
+.palco-alca:focus-visible,.palco-divisor:focus-visible{outline:2px solid var(--tinta)}
+@media (min-width:901px){
+  .cena-grade.ajustavel{grid-template-columns:minmax(0,1fr) 14px var(--rw,22rem);gap:0 .2rem}
+  .cena-grade.ajustavel>.palco-divisor,.cena-palco+.palco-divisor{display:grid}
+  .cena-grade.ajustavel>.cena-palco{grid-column:1}.cena-grade.ajustavel>.palco-divisor{grid-column:2}.cena-grade.ajustavel>.cena-lado{grid-column:3}
+}
+
+/* ornamento lateral do livro (margens, só em telas largas) */
+.moldura{display:none}
+@media (min-width:1500px){
+  .moldura{display:flex;flex-direction:column;position:fixed;top:56px;bottom:0;width:58px;z-index:-1;pointer-events:none}
+  .moldura-e{left:calc(50% - 660px - 82px)}.moldura-d{right:calc(50% - 660px - 82px);transform:scaleX(-1)}
+  .moldura i{display:block;width:100%}
+  .m-topo{height:calc(58px*785/160);background:url(assets/livro/moldura-topo.png) top center/100% auto no-repeat;flex:none}
+  .m-meio{flex:1;background:url(assets/livro/moldura-meio.png) top center/100% auto repeat-y}
+  .m-base{height:calc(58px*400/160);background:url(assets/livro/moldura-base.png) bottom center/100% auto no-repeat;flex:none}
+}
+
+/* conexão no celular: nada de painéis um sobre o outro */
+@media (max-width:700px){
+  .rolagem,.rede-feed{max-width:calc(100vw - 1rem)}
+  .visor-ferr{max-width:calc(100% - 5.6rem);gap:.2rem}
+  .visor-ferr button{padding:.22rem .4rem;font-size:.66rem}
+  .visor-zoom button{padding:.22rem .35rem;font-size:.66rem}
+}
+@media (prefers-reduced-motion:reduce){.moldura{display:none}}

@@ -4,7 +4,11 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const FASES = { saraivada: 'Saraivadas de Abertura', posicao: 'Posição', engajamento: 'Engajamento', resolucao: 'Resolução' };
   const imgs = new Map(), pedidas = new Map(); let cena = null, gmId = null, ultimaCena = '', seguir = true;
-  const visor = criarVisor($('#cena-visor'), { editavel: false, vazio: 'O Historiador ainda não mostrou nenhuma cena.', aoSelecionar: info });
+  const meuNome = () => String((typeof state !== 'undefined' && state && state.nome) || '').trim();
+  const visor = criarVisor($('#cena-visor'), { editavel: false, vazio: 'O Historiador ainda não mostrou nenhuma cena.', aoSelecionar: info,
+    podeMover: (t) => !!(cena && cena.moverLivre && t.meu), encaixar: () => !!(cena && cena.encaixar),
+    aoMover: (id, x, y) => { if (gmId && Rede.conectado()) Rede.enviar('token-mover', { id, x, y, heroi: meuNome() }, gmId); } });
+  Palco.ligar($('#cena-visor'), visor, { chave: 'jogador', grade: document.querySelector('#vista-cenas .cena-grade') });
   RedeUI.cenaJogador = { visor, imgs, get cena() { return cena; } };
   RedeUI.feedVisivel = () => !$('#vista-cenas').hidden;
   RedeUI.montarFeed($('#cena-feed'));
@@ -82,11 +86,12 @@
   });
   function aplicar() {
     const faltam = [];
-    if (!cena) { visor.definirFundo(null); visor.definirTokens([]); $('#cena-titulo').textContent = 'Cenas'; $('#cena-combate').hidden = true; $('#cena-info').textContent = ''; return; }
+    if (!cena) { visor.definirFundo(null); visor.definirTokens([]); visor.definirTracos([]); $('#cena-titulo').textContent = 'Cenas'; $('#cena-combate').hidden = true; $('#cena-info').textContent = ''; return; }
     let fundo = null;
     if (cena.fundo) { if (cena.fundo.tipo === 'mapa') fundo = { tipo: 'mapa', modo: cena.fundo.modo }; else { const src = imgs.get(cena.fundo.key); if (src) fundo = { tipo: 'imagem', src, w: cena.fundo.w, h: cena.fundo.h }; else faltam.push(cena.fundo.key); } }
     visor.definirFundo(fundo);
-    visor.definirTokens(cena.tokens.map((t) => { const src = t.k ? imgs.get(t.k) : ''; if (t.k && !src) faltam.push(t.k); return { ...t, img: src || '' }; }));
+    visor.definirTokens(cena.tokens.map((t) => { const src = t.k ? imgs.get(t.k) : ''; if (t.k && !src) faltam.push(t.k); return { ...t, img: src || '', meu: t.tp === 'h' && !!meuNome() && String(t.nome).trim() === meuNome() }; }));
+    visor.definirTracos(cena.desenhos || []);
     pedir(faltam); $('#cena-titulo').textContent = cena.titulo || 'Cena';
     const c = cena.combate, box = $('#cena-combate');
     if (c && c.ativo) { box.hidden = false; box.innerHTML = `<div class="cena-rodada"><small>Rodada</small><b>${c.fase === 'saraivada' ? '–' : c.rodada}</b></div><div><strong>${esc(FASES[c.fase] || '')}</strong><ol class="cena-ordem">${(c.ordem || []).map((o) => `<li class="${o.agiu ? 'feito' : ''}${o.tp === 'a' ? ' adv' : ''}${o.fora ? ' fora' : ''}">${esc(o.nome)}</li>`).join('')}</ol></div>`; } else box.hidden = true;
