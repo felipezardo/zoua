@@ -18,7 +18,19 @@
   const caixaAtq = document.createElement('div'); caixaAtq.id = 'cena-atq'; caixaAtq.className = 'cena-atq'; caixaAtq.setAttribute('aria-live', 'polite');
   $('#cena-info').insertAdjacentElement('afterend', caixaAtq);
   const armas = () => (typeof armaAtual === 'function' ? [0, 1, 2, 3].map((i) => [i, armaAtual(i)]).filter(([, a]) => a) : []);
+  const PODE_PERFURAR = ['Arcos', 'Lanças', 'Espadas'];
+  function pintarGasto() {
+    const r = atq.r, g = atq.gasto, n = r.icones || 0, a = r.arma || {}, pes = (r.atq && r.atq.pesado) || 0;
+    const podePerf = PODE_PERFURAR.includes(a.p) && !(r.atq && r.atq.perf) && !r.olho && n > 0, max = n - (g.perf ? 1 : 0);
+    caixaAtq.hidden = false;
+    caixaAtq.innerHTML = `<h4>Acertou ${esc(atq.alvo)}! ${(window.Saber ? Saber.btn : () => '')('ataque')}</h4><p class="atq-msg">Você tem <b>${n}</b> ícone${n > 1 ? 's' : ''} de Sucesso. Como gastá-lo${n > 1 ? 's' : ''}?</p>
+      <div class="atq-gasto"><span>Golpe Pesado ${(window.Saber ? Saber.btn : () => '')('pesado')} <small>(+${pes} de dano cada)</small></span><span class="atq-step"><button type="button" data-atq="menos" aria-label="Menos Golpe Pesado" ${g.pesado <= 0 ? 'disabled' : ''}>−</button><b>${g.pesado}</b><button type="button" data-atq="mais" aria-label="Mais Golpe Pesado" ${g.pesado >= max ? 'disabled' : ''}>+</button></span></div>
+      ${podePerf ? `<label class="atq-perf"><input type="checkbox" data-atq="perf" ${g.perf ? 'checked' : ''}> Perfurar (1 ícone): o golpe conta como Perfurante e o adversário faz a Proteção</label>${(window.Saber ? Saber.btn : () => '')('perfurante')}` : ''}
+      <p class="nota">Defender e Pancada de Escudo não são aplicados sozinhos; use as opções que aparecem na rolagem.</p>
+      <button type="button" data-atq="confirmar">Aplicar o dano</button>`;
+  }
   function pintarAtq() {
+    if (atq && atq.estado === 'gastando') return pintarGasto();
     const t = selTok && cena && cena.tokens.find((x) => x.id === selTok);
     if (!t || t.tp !== 'a' || t.fora || !Rede.conectado() || !gmId) { caixaAtq.hidden = true; caixaAtq.innerHTML = ''; return; }
     caixaAtq.hidden = false;
@@ -27,10 +39,16 @@
       return;
     }
     const ar = armas();
-    caixaAtq.innerHTML = `<h4>Atacar ${esc(t.nome)}</h4>` + (ar.length ? `<div class="atq-armas">${ar.map(([i, a]) => `<button type="button" class="atq-arma" data-atq="arma" data-i="${i}"><b>${esc(a.n)}</b><small>Dano ${a.d} · Ferimento ${a.f}</small></button>`).join('')}</div><p class="nota">Usa as armas e os valores da sua ficha. O Historiador precisa autorizar a rolagem; o dano é aplicado ao acertar.</p>` : '<p class="nota">Escolha uma arma na sua ficha (seção de combate) para poder atacar.</p>');
+    caixaAtq.innerHTML = `<h4>Atacar ${esc(t.nome)} ${(window.Saber ? Saber.btn : () => '')('ataque')}</h4>` + (ar.length ? `<div class="atq-armas">${ar.map(([i, a]) => `<button type="button" class="atq-arma" data-atq="arma" data-i="${i}"><b>${esc(a.n)}</b><small>Dano ${a.d} · Ferimento ${a.f}</small></button>`).join('')}</div><p class="nota">Usa as armas e os valores da sua ficha. O Historiador precisa autorizar a rolagem; o dano é aplicado ao acertar.</p>` : '<p class="nota">Escolha uma arma na sua ficha (seção de combate) para poder atacar.</p>');
   }
+  caixaAtq.addEventListener('change', (e) => { if (e.target.dataset.atq === 'perf' && atq && atq.gasto) { atq.gasto.perf = e.target.checked; atq.gasto.pesado = Math.min(atq.gasto.pesado, (atq.r.icones || 0) - (atq.gasto.perf ? 1 : 0)); pintarGasto(); } });
   caixaAtq.addEventListener('click', (e) => {
     const b = e.target.closest('[data-atq]'); if (!b) return;
+    if (atq && atq.estado === 'gastando' && atq.gasto) { const g = atq.gasto;
+      if (b.dataset.atq === 'mais') { if (g.pesado < (atq.r.icones || 0) - (g.perf ? 1 : 0)) g.pesado++; return pintarGasto(); }
+      if (b.dataset.atq === 'menos') { if (g.pesado > 0) g.pesado--; return pintarGasto(); }
+      if (b.dataset.atq === 'confirmar') return enviarResultadoAtq();
+      return; }
     if (b.dataset.atq === 'cancelar') { if (atq) Rede.enviar('ataque-cancelar', { rid: atq.rid }, gmId); atq = null; return pintarAtq(); }
     const t = cena && cena.tokens.find((x) => x.id === selTok), i = +b.dataset.i, a = armaAtual(i); if (!t || !a || atq) return;
     atq = { rid: Math.random().toString(36).slice(2, 9), tokenId: t.id, i, alvo: t.nome, estado: 'esperando' };
@@ -46,10 +64,15 @@
   RedeUI.on('ataque-aplicado', (env) => { if (env.d && env.d.texto) RedeUI.aviso(env.d.texto); });
   // a rolagem normal da ficha avisa quando um ataque termina: manda o resultado ao Historiador, que aplica dano e ferimento
   window.aoAtaqueRolado = (r) => {
-    if (!atq || atq.estado !== 'rolando') return; const a = r.arma || {};
-    Rede.enviar('ataque-resultado', { rid: atq.rid, tokenId: atq.tokenId, heroi: (typeof state !== 'undefined' && state.nome) || 'Jogador', arma: a.n, dano: a.d, ferim: a.f, ok: !!r.ok, grau: r.grau, icones: r.icones || 0, pesado: r.atq ? r.atq.pesado : 0, perf: !!(r.atq && r.atq.perf) }, gmId);
-    atq = null; setTimeout(pintarAtq, 0);
+    if (!atq || atq.estado !== 'rolando') return; atq.r = r;
+    if (r.ok && (r.icones || 0) > 0) { atq.estado = 'gastando'; atq.gasto = { pesado: r.icones, perf: false }; pintarAtq(); return; } // escolhe como gastar os ícones
+    enviarResultadoAtq();
   };
+  function enviarResultadoAtq() {
+    const r = atq.r, a = r.arma || {}, g = atq.gasto || { pesado: 0, perf: false };
+    Rede.enviar('ataque-resultado', { rid: atq.rid, tokenId: atq.tokenId, heroi: (typeof state !== 'undefined' && state.nome) || 'Jogador', arma: a.n, dano: a.d, ferim: a.f, ok: !!r.ok, grau: r.grau, icones: r.ok ? g.pesado : 0, pesado: r.atq ? r.atq.pesado : 0, perf: !!(r.atq && r.atq.perf) || g.perf }, gmId);
+    atq = null; setTimeout(pintarAtq, 0);
+  }
 
   function info(id) {
     selTok = id;

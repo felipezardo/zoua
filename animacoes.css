@@ -203,3 +203,9 @@
 .atq-card p{margin:0 0 .2rem}
 .atq-acoes{display:flex;gap:.5rem;margin-top:.5rem}
 .atq-acoes button{flex:1}
+.atq-gasto{display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin:.4rem 0;padding:.3rem 0;border-top:1px solid var(--linha);border-bottom:1px solid var(--linha)}
+.atq-step{display:inline-flex;align-items:center;gap:.4rem}
+.atq-step button,.cena-atq>button[data-atq]{font:600 .8rem var(--titulo);border:1px solid var(--tinta);background:transparent;color:var(--tinta);padding:.2rem .6rem;cursor:pointer;min-height:0}
+.cena-atq>button[data-atq="confirmar"]{background:var(--tinta);color:#fff;padding:.4rem .9rem;margin-top:.3rem}
+.atq-step button:disabled{opacity:.35;cursor:not-allowed}
+.atq-perf{display:flex;gap:.5rem;align-items:flex-start;margin:.3rem 0;font-size:.9rem}

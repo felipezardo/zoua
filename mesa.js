@@ -394,16 +394,26 @@ function rolarProtecao() {
   if (!ok) $('#tk-res2').insertAdjacentHTML('beforeend', `<div class="efeitos"><p>${h.ferido ? `${esc(h.nome)} já estava Ferido: role a gravidade do ferimento (Dado de Façanha, veja o livro).` : `${esc(h.nome)} fica <b>Ferido</b>.`}</p><button type="button" data-efx="ferir">${h.ferido ? 'Registrar novo Ferimento' : 'Marcar como Ferido'}</button></div>`);
   salvar();
 }
-function sofrerAtaque() {
-  const a = entidade(tkAtual.tp, tkAtual.id), dano = Math.max(0, Math.round(num($('#sf-dano').value))), fer = Math.max(0, Math.round(num($('#sf-fer').value))), perf = $('#sf-perf').checked, inv = $('#at-inv') ? $('#at-inv').checked : a.tipo === 'odio';
-  if (dano) { const antes = a.res; a.res = clamp(a.res - dano, 0, a.resMax); registrar(`${a.nome} perde ${dano} de Resistência (${antes} → ${a.res}).`); }
-  let extra = '';
+// Aplica um golpe a um adversário: perde Resistência; num Golpe Perfurante ele faz a Proteção
+// (Dado de Façanha + dados de Armadura contra o Ferimento da arma). Falhou: sofre um Ferimento; ao chegar ao Poder, cai.
+// Usado pela ficha do token e pelos ataques dos jogadores. Devolve o que aconteceu, para o chamador contar.
+function aplicarGolpe(a, dano, fer, perf, inv, alvo) {
+  const res = { perdeu: 0, perf: !!perf, protecao: null, ferido: false, fora: false };
+  if (dano) { const antes = a.res; a.res = clamp(a.res - dano, 0, a.resMax); res.perdeu = antes - a.res; registrar(`${a.nome} perde ${dano} de Resistência (${antes} → ${a.res}).`); }
   if (perf) {
     const r = lancar(a.armadura, 'n', inv), auto = inv ? r.olho : r.runa, val = inv ? (r.olho ? 12 : r.runa ? 0 : r.fac) : (r.olho ? 0 : r.fac), total = val + r.soma, ok = auto || total >= fer;
-    mostrarGM({ nome: `Proteção de ${a.nome}`, grau: ok ? 'Protegido' : 'Ferido!', ok, na: fer, total, bonus: 0, f: r.f, fac: r.fac, modo: 'n', suc: r.suc, exausto: false, arrasado: false, runa: r.runa, olho: r.olho, icones: r.icones, invertido: inv, chips: [`Armadura ${a.armadura}d`] }, '#tk-res3');
-    if (!ok) { a.feridas = Math.min(a.poder, a.feridas + 1); registrar(`${a.nome} falha na Proteção e sofre um Ferimento (${a.feridas}/${a.poder}).`); if (a.feridas >= a.poder) { a.res = 0; registrar(`${a.nome} está fora de combate.`); } }
+    mostrarGM({ nome: `Proteção de ${a.nome}`, grau: ok ? 'Protegido' : 'Ferido!', ok, na: fer, total, bonus: 0, f: r.f, fac: r.fac, modo: 'n', suc: r.suc, exausto: false, arrasado: false, runa: r.runa, olho: r.olho, icones: r.icones, invertido: inv, chips: [`Armadura ${a.armadura}d`] }, alvo);
+    res.protecao = { ok, total, fer, dados: a.armadura, fac: r.fac, runa: r.runa, olho: r.olho };
+    if (!ok) { a.feridas = Math.min(a.poder, a.feridas + 1); res.ferido = true; registrar(`${a.nome} falha na Proteção e sofre um Ferimento (${a.feridas}/${a.poder}).`); if (a.feridas >= a.poder) { a.res = 0; res.fora = true; registrar(`${a.nome} está fora de combate.`); } }
     else registrar(`${a.nome} resiste ao Golpe Perfurante.`);
-  } else $('#tk-res3').innerHTML = dano ? `<p class="ok-txt">${esc(a.nome)} perde ${dano} de Resistência (agora ${a.res}/${a.resMax}).</p>` : '';
+  }
+  if (a.res <= 0) res.fora = true;
+  return res;
+}
+function sofrerAtaque() {
+  const a = entidade(tkAtual.tp, tkAtual.id), dano = Math.max(0, Math.round(num($('#sf-dano').value))), fer = Math.max(0, Math.round(num($('#sf-fer').value))), perf = $('#sf-perf').checked, inv = $('#at-inv') ? $('#at-inv').checked : a.tipo === 'odio';
+  const r = aplicarGolpe(a, dano, fer, perf, inv, '#tk-res3');
+  if (!perf) $('#tk-res3').innerHTML = dano ? `<p class="ok-txt">${esc(a.nome)} perde ${dano} de Resistência (agora ${a.res}/${a.resMax}).</p>` : '';
   salvar(); render(); redesenharToken();
 }
 

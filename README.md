@@ -113,3 +113,14 @@ Use **Encerrar sala** ao fim da sessão: apaga do banco as imagens, áudios e me
 - **Cena ajustável (`palco.js`)**: botões de zoom, "Ajustar" e tela cheia; alça embaixo muda a altura e divisória muda a largura (duplo clique restaura).
 - **Desenho na cena**: o Historiador desenha (várias cores e espessuras), apaga com a borracha, desfaz e limpa; os jogadores veem na hora. Os desenhos somem quando o fundo da cena muda.
 - **Token do jogador**: caixa "Jogadores movem o próprio token" (liga/desliga). O jogador só move o próprio herói (marcado com um losango).
+
+## Etapa 7: conferência das regras com o livro
+
+Conferido com o livro (PDF): Dado de Façanha e de Sucesso, Runa/Olho, graus de sucesso (ícones), Favorecida/Desfavorecida (e a regra de uma anular a outra), Esperança (+1d, Inspirado +2d), Exausto (1, 2 e 3 valem 0; automático pela Carga + Fadiga), Arrasado (Olho = falha), Golpe Pesado (FORÇA, +1 com arma de duas mãos), Golpe Perfurante (10 ou Runa) e os valores base das seis culturas (Resistência, Esperança, Bloqueio).
+
+Corrigido:
+- A Proteção do adversário no ataque vindo do token usava só dados de Armadura. Agora é Dado de Façanha + dados de Armadura contra o Ferimento (Runa protege; adversário de Ódio usa o Dado de Façanha invertido), reaproveitando a mesma função da ficha do token (`aplicarGolpe` em `mesa.js`).
+- Ao chegar ao Poder, o adversário cai na hora; com 0 de Resistência, sai do combate.
+- Depois de acertar, o jogador escolhe como gastar os ícones: Golpe Pesado ou Perfurar (Arcos, Lanças e Espadas). Defender e Pancada de Escudo seguem manuais, como lembrete.
+
+"Saber mais" (`saber.js`): botão "?" discreto com lembretes curtos em Condições, Rolagem (modo, Esperança), nos painéis de ataque e no cartão de autorização do Historiador.

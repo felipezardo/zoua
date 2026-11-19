@@ -108,3 +108,13 @@ dialog::backdrop{background:var(--veu)}
   .visor-zoom button{padding:.22rem .35rem;font-size:.66rem}
 }
 @media (prefers-reduced-motion:reduce){.moldura{display:none}}
+
+/* "Saber mais": botão "?" discreto e quadro de regras no estilo do livro */
+.saber{display:inline-grid;place-items:center;width:1.15rem;height:1.15rem;min-height:0;margin:0 .25rem;padding:0;font:700 .7rem var(--titulo);line-height:1;color:var(--tinta);background:transparent;border:1px solid var(--tinta);cursor:help;vertical-align:middle}
+.saber{letter-spacing:0}
+@media (hover:hover){.saber:hover,.saber[aria-expanded="true"]{background:var(--tinta);color:#fff}}
+.saber-pop{position:fixed;z-index:60;width:min(21rem,calc(100vw - 1rem));padding:.8rem 1rem;background:var(--papel);color:var(--texto);border:var(--duplo);animation:surgir .18s var(--ease) both}
+.saber-pop h4{margin:0 0 .4rem;font:700 .95rem var(--titulo);font-variant:small-caps;letter-spacing:.05em;color:var(--tinta);border-bottom:1px solid var(--tinta);padding-bottom:.25rem}
+.saber-pop p{margin:.35rem 0;font-size:.92rem;line-height:1.4}
+.saber-pop small{display:block;margin-top:.4rem;opacity:.65;font-style:italic}
+.atq-lembrete{display:block;margin-top:.2rem}
