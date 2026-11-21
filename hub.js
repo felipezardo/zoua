@@ -40,7 +40,7 @@ function renderHub() {
   $('#hub-lista').innerHTML = ids.length ? ids.map(id => {
     const f = db.fichas[id], c = CULTURAS[f.cultura], ch = CHAMADOS[f.chamado];
     return `<article class="card-ficha" data-id="${id}">
-      <button type="button" class="card-retrato" data-acao="abrir" aria-label="Abrir ${esc(f.nome || 'ficha sem nome')}">${f.retrato ? `<img src="${esc(f.retrato)}" alt="" onerror="this.replaceWith(document.createTextNode('Imagem indisponível'))">` : '<span>Sem retrato</span>'}</button>
+      <button type="button" class="card-retrato" data-acao="abrir" aria-label="Abrir ${esc(f.nome || 'ficha sem nome')}">${(f.retrato || Arte.heroi(f.cultura)) ? `<img src="${esc(f.retrato || Arte.heroi(f.cultura))}" alt="" onerror="this.replaceWith(document.createTextNode('Imagem indisponível'))">` : '<span>Sem retrato</span>'}</button>
       <h3>${esc(f.nome || 'Sem nome')}</h3><p>${c ? esc(c.nome) : 'Cultura não escolhida'}${ch ? ' – ' + esc(ch.nome) : ''}</p>
       <div class="card-botoes"><button type="button" data-acao="abrir">Abrir</button><button type="button" data-acao="retrato">Retrato</button><button type="button" data-acao="exportar">Exportar</button><button type="button" data-acao="duplicar">Duplicar</button><button type="button" data-acao="excluir">Excluir</button></div></article>`;
   }).join('') : '<p class="nota">Nenhuma ficha ainda. Toque em Nova ficha para começar.</p>';
@@ -73,8 +73,11 @@ $$('#abas button').forEach(b => b.onclick = () => mostrar(b.dataset.aba));
 let retratoId = null;
 function renderRetrato() {
   const im = $('#retrato-img'), t = $('#retrato span');
-  if (state.retrato) { im.src = state.retrato; im.hidden = false; t.hidden = true; } else { im.hidden = true; im.removeAttribute('src'); t.hidden = false; }
+  const padrao = !state.retrato && Arte.heroi(state.cultura), fonte = state.retrato || padrao; im.classList.toggle('padrao', !!padrao);
+  if (fonte) { im.src = fonte; im.hidden = false; t.hidden = true; } else { im.hidden = true; im.removeAttribute('src'); t.hidden = false; }
 }
+// o retrato padrão acompanha a cultura escolhida
+document.addEventListener('change', (e) => { if (e.target.dataset && e.target.dataset.k === 'cultura') setTimeout(renderRetrato, 0); });
 $('#retrato-img').onerror = () => { $('#retrato-img').hidden = true; $('#retrato span').hidden = false; avisar('Não foi possível carregar a imagem do link.'); };
 function abrirRetrato(id) {
   retratoId = id; const r = db.fichas[id]?.retrato || '';

@@ -118,7 +118,9 @@ function definir(tp, id, campo, valor) {
 
 // ---------- tokens (avatar redondo com anel de Resistência) ----------
 const iniciais = (n) => String(n).split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
-const imgDe = (tp, e) => (tp === 'h' ? e.ficha.retrato || '' : e.img || '');
+const imgDe = (tp, e) => (tp === 'h' ? e.ficha.retrato || Arte.heroi(e.ficha.cultura) : e.img || ((Arte.adv(e.baseId, e.categoria) || {}).rosto || ''));
+const arteAdv = (a) => ((Arte.adv(a.baseId || a.id, a.categoria) || {}).arte || ''); // cartão da base usa id; adversário em jogo usa baseId
+const figuraAdv = (a) => { const s = arteAdv(a); return s ? `<figure class="arte-adv"><img src="${s}" alt="Ilustração de ${esc(a.nome)}" draggable="false"></figure>` : ''; };
 const corRing = (p) => (p > 60 ? 'var(--ok)' : p > 30 ? '#c9902a' : '#b3322c');
 const resMaxDe = (tp, e) => (tp === 'h' ? derivar(e.ficha).resMax : e.resMax);
 const avatar = (tp, e, cls = '') => { const img = imgDe(tp, e); return `<span class="av ${cls}" style="--cor:${tp === 'h' ? COR_HEROI : e.cor}">${img ? `<img src="${esc(img)}" alt="" draggable="false">` : `<span>${esc(iniciais(e.nome))}</span>`}</span>`; };
@@ -184,7 +186,7 @@ function renderAdversarios() {
 }
 function abrirAdv(id) {
   const b = bestiario().find((x) => x.id === id); if (!b) return; const o = b.tipo === 'odio' ? 'Ódio' : 'Determinação';
-  $('#da-corpo').innerHTML = `<h2 id="da-t" tabindex="-1" autofocus>${esc(b.nome)}</h2><p class="nota">${esc(b.categoria)}${b.tracos?.length ? ' · ' + b.tracos.map(esc).join(', ') : ''}</p>
+  $('#da-corpo').innerHTML = `${figuraAdv(b)}<h2 id="da-t" tabindex="-1" autofocus>${esc(b.nome)}</h2><p class="nota">${esc(b.categoria)}${b.tracos?.length ? ' · ' + b.tracos.map(esc).join(', ') : ''}</p>
     <dl class="statblock"><div><dt>Nível de Atributo</dt><dd>${b.nivel}</dd></div><div><dt>Resistência</dt><dd>${b.resistencia}</dd></div><div><dt>Poder</dt><dd>${b.poder}</dd></div><div><dt>${o}</dt><dd>${b.pontos}</dd></div><div><dt>Bloqueio</dt><dd>${sinal(b.bloqueio)}</dd></div><div><dt>Armadura</dt><dd>${b.armadura}</dd></div></dl>
     <h3>Proficiências de combate</h3><ul class="lista">${(b.proficiencias || []).map((p) => `<li>${profTxt(p)}</li>`).join('') || '<li>–</li>'}</ul>
     <h3>Habilidades mortais</h3><ul class="lista">${(b.habilidades || []).map((h) => `<li><b>${esc(h.nome)}.</b> ${esc(h.texto)}</li>`).join('') || '<li>Nenhuma.</li>'}</ul>
@@ -320,7 +322,7 @@ function painelHeroi(h) {
 function painelAdv(a) {
   const heroes = Object.values(mesa.herois), o = rotOdio(a);
   const optAlvo = heroes.map((h) => `<option value="${h.id}"${a.engajaCom[0] === h.id ? ' selected' : ''}>${esc(h.nome)}</option>`).join('');
-  return `<h2 id="dt-t" tabindex="-1" autofocus>${esc(a.nome)}</h2><p class="nota">${esc(a.categoria)}${a.tracos?.length ? ' · ' + a.tracos.map(esc).join(', ') : ''}</p>
+  return `${figuraAdv(a)}<h2 id="dt-t" tabindex="-1" autofocus>${esc(a.nome)}</h2><p class="nota">${esc(a.categoria)}${a.tracos?.length ? ' · ' + a.tracos.map(esc).join(', ') : ''}</p>
     <label class="campo">Nome neste combate<input type="text" data-nome-adv="${a.id}" value="${esc(a.nome)}"></label>
     <div class="barras">${stepper('a', a.id, 'res', 'Resistência', a.res, a.resMax)}${stepper('a', a.id, 'pts', o, a.pts, a.ptsMax)}${stepper('a', a.id, 'feridas', 'Ferimentos', a.feridas, a.poder)}</div>
     ${rapidoHTML('a', a)}

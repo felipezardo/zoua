@@ -9,9 +9,9 @@
   // ---------- tokens da cena ----------
   function resolver(t) {
     if (t.tp === 'h') { const h = mesa.herois[t.ref]; if (!h) return null; const d = derivar(h.ficha);
-      return { id: t.id, tp: 'h', ref: t.ref, nome: h.nome, x: t.x, y: t.y, esc: t.esc || 1, img: h.ficha.retrato || '', cor: COR_HEROI, pct: d.resMax ? Math.round(h.res / d.resMax * 100) : null, res: h.res, resMax: d.resMax, fora: h.res <= 0, badges: [h.exausto && 'E', h.arrasado && 'A', h.ferido && 'F'].filter(Boolean), estados: COND.filter(([k]) => h[k]).map(([, n]) => n), oculto: !!t.oculto }; }
+      return { id: t.id, tp: 'h', ref: t.ref, nome: h.nome, x: t.x, y: t.y, esc: t.esc || 1, img: h.ficha.retrato || Arte.heroi(h.ficha.cultura), cor: COR_HEROI, pct: d.resMax ? Math.round(h.res / d.resMax * 100) : null, res: h.res, resMax: d.resMax, fora: h.res <= 0, badges: [h.exausto && 'E', h.arrasado && 'A', h.ferido && 'F'].filter(Boolean), estados: COND.filter(([k]) => h[k]).map(([, n]) => n), oculto: !!t.oculto }; }
     const a = mesa.advs.find((x) => x.id === t.ref); if (!a) return null;
-    return { id: t.id, tp: 'a', ref: t.ref, nome: a.nome, x: t.x, y: t.y, esc: t.esc || 1, img: a.img || '', cor: a.cor, pct: a.resMax ? Math.round(a.res / a.resMax * 100) : null, res: a.res, resMax: a.resMax, fora: a.res <= 0, badges: a.feridas ? ['F'] : [], estados: [], oculto: !!t.oculto };
+    return { id: t.id, tp: 'a', ref: t.ref, nome: a.nome, x: t.x, y: t.y, esc: t.esc || 1, img: a.img || ((Arte.adv(a.baseId, a.categoria) || {}).rosto || ''), cor: a.cor, pct: a.resMax ? Math.round(a.res / a.resMax * 100) : null, res: a.res, resMax: a.resMax, fora: a.res <= 0, badges: a.feridas ? ['F'] : [], estados: [], oculto: !!t.oculto };
   }
   const tokensGM = () => C().tokens.map(resolver).filter(Boolean);
   const fundoLocal = () => { const f = C().fundo; return !f || f.tipo === 'nenhum' ? null : f.tipo === 'mapa' ? { tipo: 'mapa', modo: f.modo } : { tipo: 'imagem', src: f.src, w: f.w, h: f.h }; };

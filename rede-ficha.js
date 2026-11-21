@@ -14,7 +14,7 @@
   async function enviarFicha(forcar) {
     if (!Rede.conectado() || !(state.nome || '').trim()) return;
     const f = JSON.parse(JSON.stringify(state)); delete f.retrato; delete f.rol_hist; delete f.mapa_vista; delete f.mapa_eriador;
-    const ret = await miniatura(state.retrato), sig = JSON.stringify(f) + ret.length;
+    const ret = await miniatura(state.retrato || Arte.heroi(state.cultura)), sig = JSON.stringify(f) + ret.length;
     if (!forcar && sig === ultimo) return; ultimo = sig; Rede.enviar('ficha', { nome: state.nome.trim(), f, ret });
   }
   const agendar = (forcar) => { clearTimeout(t); t = setTimeout(() => enviarFicha(forcar), forcar ? 100 : 800); };

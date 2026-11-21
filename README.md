@@ -124,3 +124,10 @@ Corrigido:
 - Depois de acertar, o jogador escolhe como gastar os ícones: Golpe Pesado ou Perfurar (Arcos, Lanças e Espadas). Defender e Pancada de Escudo seguem manuais, como lembrete.
 
 "Saber mais" (`saber.js`): botão "?" discreto com lembretes curtos em Condições, Rolagem (modo, Esperança), nos painéis de ataque e no cartão de autorização do Historiador.
+
+## Etapa 8: arte do livro
+
+- **Adversários** (`arte.js`, `assets/adv/`): as 24 criaturas têm ilustração extraída do livro, sem fundo (WebP transparente), que aparece na ficha dele (modal do adversário e painel do token) como figura solta sobre o papel. O token usa o rosto recortado, em quadrado, sem depender de ajuste manual. Onde o livro não tem arte própria, vale a mais próxima (por exemplo, Chefe Rufião usa a do Saqueador Sulista; Rei das Aparições, a da Aparição Tumular).
+- **Heróis** (`assets/herois/`): retrato padrão por cultura heróica (Anões de Durin, Bardeses de Vale, Elfos de Lindon, Hobbits do Condado, Homens de Bri e Patrulheiros do Norte), tirado da ilustração de cada cultura no livro. Aparece na ficha, no hub, no token e no que o Historiador recebe, até o jogador escolher o próprio retrato.
+- Um adversário personalizado com imagem própria continua usando a dele.
+- Aviso: as ilustrações são do livro de regras (com direitos autorais). Se o repositório for público, considere deixá-lo privado ou tirar a pasta `assets/adv` e `assets/herois` do que for publicado.

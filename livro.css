@@ -118,3 +118,10 @@ dialog::backdrop{background:var(--veu)}
 .saber-pop p{margin:.35rem 0;font-size:.92rem;line-height:1.4}
 .saber-pop small{display:block;margin-top:.4rem;opacity:.65;font-style:italic}
 .atq-lembrete{display:block;margin-top:.2rem}
+
+/* arte do livro: sem moldura, sem fundo; ilustração solta sobre o papel */
+.arte-adv{float:right;margin:0 0 .6rem 1rem;max-width:min(48%,18rem);shape-outside:margin-box}
+.arte-adv img{display:block;width:100%;height:auto;max-height:12rem;object-fit:contain;object-position:right bottom;background:transparent;border:0;pointer-events:none;user-select:none}
+#dlg-adv .statblock,#dlg-token .statblock{clear:none}
+.retrato img.padrao{filter:none;opacity:.96}
+@media (max-width:560px){.arte-adv{float:none;max-width:70%;margin:.2rem auto .6rem}.arte-adv img{margin:0 auto;object-position:center}}
