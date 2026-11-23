@@ -171,3 +171,6 @@ table.tab tbody tr.sorteado th,table.tab tbody tr.sorteado td{font-weight:700}
 @media (max-width:700px){.tab-busca input{min-width:0;width:100%}.tab-locais{width:100%;overflow-x:auto;flex-wrap:nowrap}.tab-locais button{white-space:nowrap}}
 .tab-card>summary{color:var(--texto);font-weight:400}
 .tab-quando{color:var(--texto);font-weight:400}
+
+/* o foco por teclado dos losangos usava sombra; sem sombras, usa contorno */
+.d:focus-within::before{outline:2px solid var(--tinta);outline-offset:2px}

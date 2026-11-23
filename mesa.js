@@ -17,7 +17,7 @@ const vazio = () => ({ v: 1, herois: {}, advs: [], custom: [], jornada: {}, cena
 const semMapaPadrao = (m) => { if (m.cena && m.cena.fundo && m.cena.fundo.tipo === 'mapa') m.cena.fundo = { tipo: 'nenhum' }; return m; };
 let mesa = (() => { try { const o = JSON.parse(localStorage.getItem(CHAVE) || 'null'); if (o && o.v === 1) return semMapaPadrao(Object.assign(vazio(), o)); } catch {} return vazio(); })();
 let tSalvar;
-function salvar() { clearTimeout(tSalvar); tSalvar = setTimeout(() => { try { localStorage.setItem(CHAVE, JSON.stringify(mesa)); } catch { aviso('Não foi possível salvar neste navegador (espaço cheio?). Use "Salvar mesa" para guardar um backup.'); } }, 120); }
+function salvar() { clearTimeout(tSalvar); tSalvar = setTimeout(() => { try { localStorage.setItem(CHAVE, JSON.stringify(mesa, function (k, v) { return k === 'src' && this && this.tipo === 'imagem' && this.lib ? undefined : v; })); } catch { aviso('Não foi possível salvar neste navegador (espaço cheio?). Use "Salvar mesa" para guardar um backup.'); } }, 120); }
 let tAviso;
 function aviso(m) { let el = $('#aviso'); if (!el) { el = document.createElement('div'); el.id = 'aviso'; el.setAttribute('role', 'status'); document.body.appendChild(el); } el.textContent = m; el.hidden = false; clearTimeout(tAviso); tAviso = setTimeout(() => { el.hidden = true; }, 5000); }
 function confirmar(titulo, msg, acao, rotulo = 'Confirmar') {

@@ -31,7 +31,7 @@
       aoTraco: (t) => { const c = C(); c.desenhos = (c.desenhos || []).concat([t]).slice(-250); salvar(); sincronizar(true); },
       aoApagar: (ids) => { const c = C(); c.desenhos = (c.desenhos || []).filter((t) => !ids.includes(t.id)); salvar(); sincronizar(true); },
       aoVista: () => { if (C().aoVivo) { clearTimeout(tVista); tVista = setTimeout(() => sincronizar(), 250); } } });
-    visor.definirTracos(C().desenhos || []); montarFerramentas(); Palco.ligar($('#cena-visor-gm'), visor, { chave: 'gm', grade: $('#v-cenas .cena-grade') });
+    reidratarFundo(); visor.definirTracos(C().desenhos || []); montarFerramentas(); Palco.ligar($('#cena-visor-gm'), visor, { chave: 'gm', grade: $('#v-cenas .cena-grade') });
     RedeUI.montarFeed($('#cena-feed-gm'));
     atualizar(); carregarBib(); if (window.desenharMusica) desenharMusica();
   }
@@ -77,16 +77,20 @@
       if (k === 'abrir') abrirToken(tk.tp, tk.ref); else if (k === 'maior') tk.esc = Math.min(4, +((tk.esc || 1) + 0.25).toFixed(2)); else if (k === 'menor') tk.esc = Math.max(0.5, +((tk.esc || 1) - 0.25).toFixed(2)); else if (k === 'ocultar') tk.oculto = !tk.oculto; else if (k === 'remover') { C().tokens = C().tokens.filter((x) => x.id !== sel); sel = null; visor.selecionar(null); }
       salvar(); atualizar(); sincronizar(); return; }
     if (t.id === 'cena-proj') { C().ativa = !C().ativa; if (C().ativa) { if (!redeOn()) { C().ativa = false; RedeUI.aviso('Conecte-se a uma sala (botão de sinal na barra) para mostrar a cena aos jogadores.'); RedeUI.abrirConexao(); } else { enviarCena(); Rede.enviar('cena-foco', { vista: visor.vista() }); RedeUI.aviso('Cena visível para os jogadores.'); } } else if (redeOn()) { Rede.enviar('cena-fim', {}); RedeUI.aviso('Cena oculta dos jogadores.'); } atualizar(); return; }
-    if (t.id === 'cena-foco') { if (!redeOn()) return RedeUI.aviso('Conecte-se a uma sala primeiro.'); if (!C().ativa) { C().ativa = true; atualizar(); enviarCena(); } Rede.enviar('cena-foco', { vista: visor.vista() }); RedeUI.aviso('Jogadores levados a esta vista.'); return; }
   });
   document.addEventListener('change', async (e) => {
     const t = e.target;
     if (t.id === 'cena-encaixar') { C().encaixar = t.checked; salvar(); } else if (t.id === 'cena-vida') { C().mostrarVida = t.checked; salvar(); sincronizar(); } else if (t.id === 'cena-ao-vivo') { C().aoVivo = t.checked; salvar(); sincronizar(); } else if (t.id === 'cena-mover-livre') { C().moverLivre = t.checked; salvar(); sincronizar(true); RedeUI.aviso(t.checked ? 'Os jogadores agora movem o próprio token.' : 'Só você move os tokens.'); }
     else if (t.id === 'cena-titulo-in') { C().titulo = t.value.trim() || 'Cena'; salvar(); sincronizar(); }
-    else if (t.id === 'arq-cena-img') { const f = t.files[0]; if (!f) return; try { const im = await lerImagem(f, 1280); C().fundo = { tipo: 'imagem', ...im }; C().tokens.forEach((k) => { k.x = Math.min(k.x, im.w); k.y = Math.min(k.y, im.h); }); salvar(); atualizar(); sincronizar(true); } catch { RedeUI.aviso('Não consegui ler essa imagem.'); } }
   });
 
   // ---------- sincronização com os jogadores ----------
+  // a mesa guardada não repete a imagem de fundo: ao abrir, ela volta da biblioteca (ou do arquivo de mesa, que é completo)
+  function reidratarFundo() {
+    const f = C().fundo; if (!f || f.tipo !== 'imagem' || f.src || !f.lib || !window.Biblioteca) return;
+    Biblioteca.obter(f.lib).then((it) => { if (it && C().fundo === f) { f.src = it.src; atualizar(); } else if (!it && C().fundo === f) { C().fundo = { tipo: 'nenhum' }; salvar(); atualizar(); RedeUI.aviso('A imagem de fundo da cena não está mais na biblioteca deste navegador.'); } }).catch(() => {});
+  }
+
   // ---------- ferramentas sobre a cena: mover, desenhar, apagar ----------
   const CORES = [['#b3322c', 'Vermelho'], ['#2a1c14', 'Tinta escura'], ['#f2e9d4', 'Papel'], ['#b08a45', 'Ouro velho']];
   let ferr = { tipo: 'mao', cor: CORES[0][0], esp: 3 };
