@@ -12,8 +12,10 @@ const sinal = (n) => (n > 0 ? '+' + n : n < 0 ? '−' + Math.abs(n) : '0');
 
 // ---------- estado e salvamento ----------
 const CHAVE = 'um-anel-mesa-v1';
-const vazio = () => ({ v: 1, herois: {}, advs: [], custom: [], jornada: {}, cena: { id: 'c' + Math.random().toString(36).slice(2, 7), ativa: false, titulo: 'Cena', fundo: { tipo: 'mapa', modo: 'jogadores' }, tokens: [], encaixar: true, mostrarVida: false, aoVivo: false }, combate: { ativo: false, rodada: 0, fase: 'posicao', saraivada: true }, log: [] });
-let mesa = (() => { try { const o = JSON.parse(localStorage.getItem(CHAVE) || 'null'); if (o && o.v === 1) return Object.assign(vazio(), o); } catch {} return vazio(); })();
+const vazio = () => ({ v: 1, herois: {}, advs: [], custom: [], jornada: {}, cena: { id: 'c' + Math.random().toString(36).slice(2, 7), ativa: false, titulo: 'Cena', fundo: { tipo: 'nenhum' }, tokens: [], encaixar: true, mostrarVida: false, aoVivo: false }, combate: { ativo: false, rodada: 0, fase: 'posicao', saraivada: true }, log: [] });
+// Os mapas de Eriador moram na Jornada; as Cenas começam sem fundo (mesas antigas que usavam o mapa também)
+const semMapaPadrao = (m) => { if (m.cena && m.cena.fundo && m.cena.fundo.tipo === 'mapa') m.cena.fundo = { tipo: 'nenhum' }; return m; };
+let mesa = (() => { try { const o = JSON.parse(localStorage.getItem(CHAVE) || 'null'); if (o && o.v === 1) return semMapaPadrao(Object.assign(vazio(), o)); } catch {} return vazio(); })();
 let tSalvar;
 function salvar() { clearTimeout(tSalvar); tSalvar = setTimeout(() => { try { localStorage.setItem(CHAVE, JSON.stringify(mesa)); } catch { aviso('Não foi possível salvar neste navegador (espaço cheio?). Use "Salvar mesa" para guardar um backup.'); } }, 120); }
 let tAviso;
@@ -69,7 +71,7 @@ async function importarArquivos(files) {
   for (const file of files) {
     try {
       const o = JSON.parse(await file.text());
-      if (o && o.v === 1 && o.herois && o.advs) { confirmar('Carregar a mesa?', `"${file.name}" é um backup da Mesa e vai substituir a mesa atual.`, () => { mesa = Object.assign(vazio(), o); salvar(); render(); if (window.aoMesaCarregada) window.aoMesaCarregada(); aviso('Mesa carregada.'); }, 'Carregar'); continue; }
+      if (o && o.v === 1 && o.herois && o.advs) { confirmar('Carregar a mesa?', `"${file.name}" é um backup da Mesa e vai substituir a mesa atual.`, () => { mesa = semMapaPadrao(Object.assign(vazio(), o)); salvar(); render(); if (window.aoMesaCarregada) window.aoMesaCarregada(); aviso('Mesa carregada.'); }, 'Carregar'); continue; }
       for (const f of Array.isArray(o) ? o : [o]) {
         if (f && typeof f === 'object' && (f.cultura || f.forca_nivel !== undefined || f.nome)) { importarFicha(f) === 'nova' ? novos++ : atual++; } else aviso(`${file.name}: não parece uma ficha de O Um Anel.`);
       }
@@ -461,7 +463,7 @@ async function baixarToken(tp, id) {
 const reduzirImagem = (file, max) => new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => { const im = new Image(); im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); ok(c.toDataURL('image/jpeg', 0.85)); }; im.onerror = no; im.src = fr.result; }; fr.onerror = no; fr.readAsDataURL(file); });
 
 // ---------- navegação e tema ----------
-const VISTAS = ['combate', 'cenas', 'jornada', 'companhia', 'adversarios'];
+const VISTAS = ['combate', 'cenas', 'jornada', 'tabelas', 'companhia', 'adversarios'];
 function irAba(n) {
   VISTAS.forEach((v) => { $('#v-' + v).hidden = v !== n; });
   $$('#abas button').forEach((b) => { const on = b.dataset.aba === n; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });

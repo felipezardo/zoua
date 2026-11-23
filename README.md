@@ -131,3 +131,9 @@ Corrigido:
 - **Heróis** (`assets/herois/`): retrato padrão por cultura heróica (Anões de Durin, Bardeses de Vale, Elfos de Lindon, Hobbits do Condado, Homens de Bri e Patrulheiros do Norte), tirado da ilustração de cada cultura no livro. Aparece na ficha, no hub, no token e no que o Historiador recebe, até o jogador escolher o próprio retrato.
 - Um adversário personalizado com imagem própria continua usando a dele.
 - Aviso: as ilustrações são do livro de regras (com direitos autorais). Se o repositório for público, considere deixá-lo privado ou tirar a pasta `assets/adv` e `assets/herois` do que for publicado.
+
+## Etapa 9: mapas do livro, ajustes de arte e Tabelas
+
+- **Mapas:** `assets/eriador.webp` (jogadores) e `assets/eriador-historiador.webp` (terrenos e hexágonos) agora vêm do PDF de mapas do livro, na resolução original embutida (2587 × 1683). A malha do app foi remedida nos hexágonos do próprio mapa e o espaço lógico (5174 × 3366) foi ajustado, mantendo os mesmos índices de hexágono: marcas já salvas continuam no lugar. As Cenas não trazem mais os mapas (nem usam fundo por padrão); mesas antigas que usavam o mapa começam sem fundo.
+- **Arte:** corrigida conforme as armas e descrições. Arqueiro Goblin usa o arqueiro do livro; Chefe Grande Orc e Guarda-costas usam o Grande Orc de cimitarra e escudo; Guarda e Soldado Orc, o orc de escudo redondo; Salteador (Cassetete) usa o brutamontes de tacape; Chefe Rufião e Ladrão de Estrada, o rufião sentado.
+- **Tabelas do Historiador (`tabelas-data.js`, `tabelas.js`):** nova aba. 8 locais (Na estrada, Na luta, Perigo e Sombra, Vigilância do Olho, Conselho, Tesouro, Descanso e Sociedade, Coisa Inominável) e, dentro deles, grupos por contexto. Cada tabela diz quando e como usar e, nas que se jogam, tem botão Rolar (com região ou severidade para o Dado de Façanha) que destaca a linha. Há busca por palavra.

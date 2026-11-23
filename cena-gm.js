@@ -19,9 +19,9 @@
   // ---------- estrutura ----------
   function montar() {
     $('#v-cenas').innerHTML = `<header class="mesa-topo"><h2>Cenas</h2><div class="acoes"><button type="button" id="cena-proj" aria-pressed="false">Mostrar cena</button></div></header>
-      <section class="cena-fila" aria-label="Imagens da cena"><div class="fila-topo"><h3>Imagens</h3><div class="mus-add fila-add"><label class="btn-arq">Adicionar imagens<input type="file" id="bib-arq" accept="image/*" multiple hidden></label><input id="fila-link" placeholder="…ou cole o link de uma imagem" autocomplete="off"><button type="button" id="fila-add-link">Adicionar link</button></div></div><p class="nota">Clique numa imagem ou mapa para mostrá-lo aos jogadores na hora, com a mesma vista que você está usando.</p><div id="fila-grade" class="bib-grade fila" role="list"></div></section>
+      <section class="cena-fila" aria-label="Imagens da cena"><div class="fila-topo"><h3>Imagens</h3><div class="mus-add fila-add"><label class="btn-arq">Adicionar imagens<input type="file" id="bib-arq" accept="image/*" multiple hidden></label><input id="fila-link" placeholder="…ou cole o link de uma imagem" autocomplete="off"><button type="button" id="fila-add-link">Adicionar link</button></div></div><p class="nota">Clique numa imagem para mostrá-la aos jogadores na hora, com a mesma vista que você está usando. (Os mapas de Eriador ficam na aba Jornada.)</p><div id="fila-grade" class="bib-grade fila" role="list"></div></section>
       <section class="cena-fila trilha" aria-label="Trilha sonora"><div class="fila-topo"><h3>Trilha sonora</h3></div><div id="cena-trilha-corpo"></div></section>
-      <div class="cena-barra"><label class="cond-lbl"><input type="checkbox" id="cena-encaixar"> Encaixar nos hexágonos</label><label class="cond-lbl"><input type="checkbox" id="cena-vida"> Mostrar a vida dos adversários</label><label class="cond-lbl"><input type="checkbox" id="cena-mover-livre"> Jogadores movem o próprio token</label>
+      <div class="cena-barra"><label class="cond-lbl" id="cena-encaixar-l" hidden><input type="checkbox" id="cena-encaixar"> Encaixar nos hexágonos</label><label class="cond-lbl"><input type="checkbox" id="cena-vida"> Mostrar a vida dos adversários</label><label class="cond-lbl"><input type="checkbox" id="cena-mover-livre"> Jogadores movem o próprio token</label>
         <label class="campo cena-tit">Título<input id="cena-titulo-in" autocomplete="off"></label></div>
       <div class="cena-grade"><div class="cena-palco"><div id="cena-visor-gm"></div><div id="cena-sel" class="cena-sel" aria-live="polite"></div></div>
         <aside class="cena-lado"><h3>Colocar na cena</h3><div id="cena-paleta"></div><div id="cena-combate-gm" class="cena-combate-gm"></div><h3>Rolagens da mesa</h3><ol id="cena-feed-gm" class="rede-feed-lista cena-feed"></ol></aside></div>`;
@@ -116,7 +116,7 @@
 
   // ---------- fila de imagens: um clique mostra a imagem aos jogadores ----------
   let bibImgs = [];
-  const MAPAS = [['jogadores', 'Mapa dos jogadores', 'assets/eriador.webp'], ['historiador', 'Mapa do Historiador', 'assets/eriador-historiador.webp']];
+  const MAPAS = []; // os mapas de Eriador ficam na Jornada; aqui só as imagens do Historiador
   async function carregarBib() { try { bibImgs = await Biblioteca.listar('img'); } catch { bibImgs = []; } renderFila(); }
   function renderFila() {
     const g = $('#fila-grade'); if (!g) return; const f = C().fundo, mapa = f && f.tipo === 'mapa' ? f.modo : '', lib = f && f.tipo === 'imagem' ? f.lib : '';

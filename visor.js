@@ -2,8 +2,8 @@
 // Usado pelo Historiador (modo de edição: arrasta os tokens) e pelos jogadores (somente leitura).
 (() => {
   const MAPAS = { jogadores: 'assets/eriador.webp', historiador: 'assets/eriador-historiador.webp' };
-  const MAPA_W = 5112, MAPA_H = 3304;
-  const G = { w: 87.444, R: 50.436, h: 76.151, ox: 102.406, oy: 17.062 }; // mesma malha de hexágonos do Caminho da Jornada
+  const MAPA_W = 5174, MAPA_H = 3366; // espaço lógico = 2 × o arquivo do livro (2587 × 1683); a malha abaixo foi medida nos hexágonos do próprio mapa
+  const G = { w: 87.36, R: 50.693, h: 76.04, ox: 137.2, oy: 51.4 }; // mesma malha de hexágonos do Caminho da Jornada
   const centroHex = (c, r) => [G.ox + G.w * (c + 0.5 * (r & 1)), G.oy + G.h * r];
   function hexEm(x, y) {
     const r0 = Math.round((y - G.oy) / G.h); let m = null, md = 9;

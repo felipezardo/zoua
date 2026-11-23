@@ -1,12 +1,12 @@
 // ============ Mapa de Eriador: zoom, arrasto e marcação de hexágonos ============
 // A malha desenhada no mapa original foi medida e refeita aqui em código. Todas as medidas
-// abaixo estão em pixels da imagem ORIGINAL (5112 x 3304), então o arquivo pode ser trocado por
+// abaixo estão em pixels do espaço lógico do mapa (5174 x 3366, o dobro do arquivo do livro), então o arquivo pode ser trocado por
 // uma versão menor ou maior da mesma imagem sem desalinhar nada.
 (() => {
   const MAPA_SRC = 'assets/eriador.webp';                        // mapa dos jogadores (padrão)
   const MAPA_HIST_SRC = 'assets/eriador-historiador.webp';       // mapa do Historiador (mesma malha e mesmas dimensões)
-  const IMG_W = 5112, IMG_H = 3304;
-  const G = { w: 87.444, R: 50.436, h: 76.151, ox: 102.406, oy: 17.062 }; // hexágonos "pointy-top", linhas ímpares deslocadas
+  const IMG_W = 5174, IMG_H = 3366; // 2 × o arquivo do livro (2587 × 1683)
+  const G = { w: 87.36, R: 50.693, h: 76.04, ox: 137.2, oy: 51.4 }; // hexágonos "pointy-top", linhas ímpares deslocadas
   const MARCAS = { 1: { nome: 'Percurso', glifo: '●', cor: '179,50,44' }, 2: { nome: 'Perigo', glifo: '✕', cor: '40,28,20' }, 3: { nome: 'Abrigo', glifo: '⌂', cor: '44,107,47' } };
   const K_MAX = 1.6;
 

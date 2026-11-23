@@ -125,3 +125,49 @@ dialog::backdrop{background:var(--veu)}
 #dlg-adv .statblock,#dlg-token .statblock{clear:none}
 .retrato img.padrao{filter:none;opacity:.96}
 @media (max-width:560px){.arte-adv{float:none;max-width:70%;margin:.2rem auto .6rem}.arte-adv img{margin:0 auto;object-position:center}}
+
+/* ---------- Tabelas do Historiador ---------- */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#tabelas-gm{display:block;max-width:none}
+.tab-barra{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:flex-end;justify-content:space-between;margin:.6rem 0}
+.tab-locais{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--tinta)}
+.tab-locais button{display:inline-flex;gap:.4rem;align-items:baseline;padding:.45rem .8rem;border:0;border-right:1px solid var(--tinta);background:transparent;color:var(--tinta);font:600 .8rem var(--titulo);letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:background .15s,color .15s}
+.tab-locais button:last-child{border-right:0}
+.tab-locais button small{font:400 .7rem var(--corpo);opacity:.7}
+@media (hover:hover){.tab-locais button:not(.on):hover{background:rgba(179,50,44,.12)}}
+.tab-locais button.on{background:var(--tinta);color:#fff}
+.tab-busca input{min-width:15rem;border:0;border-bottom:1px solid var(--tinta);background:transparent;padding:.35rem .2rem;font:inherit}
+.tab-sub{margin:.2rem 0 .6rem;font-style:italic;opacity:.8}
+.tab-grupo{margin:1rem 0}
+.tab-grupo>h3{margin:0 0 .4rem;padding-bottom:.2rem;border-bottom:1px solid var(--tinta);font:700 .95rem var(--titulo);font-variant:small-caps;letter-spacing:.06em;color:var(--tinta)}
+.tab-card{border:1px solid var(--tinta);background:var(--papel);margin:0 0 .5rem;animation:surgir .25s var(--ease) both}
+.tab-card[open]{outline:1px solid var(--tinta);outline-offset:-4px}
+.tab-card>summary{list-style:none;cursor:pointer;display:grid;gap:.1rem;padding:.55rem .8rem;transition:background .15s}
+.tab-card>summary::-webkit-details-marker{display:none}
+@media (hover:hover){.tab-card>summary:hover{background:rgba(179,50,44,.08)}}
+.tab-titulo{display:flex;align-items:center;gap:.5rem;font:700 1rem var(--titulo);color:var(--tinta)}
+.tab-titulo::before{content:"◆";font-size:.55rem;transition:transform .2s var(--ease)}
+.tab-card[open] .tab-titulo::before{transform:rotate(90deg)}
+.tab-dado{margin-left:auto;padding:0 .4rem;border:1px solid var(--tinta);font:700 .68rem var(--titulo);letter-spacing:.05em}
+.tab-quando{font-size:.88rem;opacity:.82}
+.tab-corpo{padding:.2rem .8rem .8rem;border-top:1px solid var(--linha)}
+.tab-como{margin:.5rem 0;font-size:.93rem;line-height:1.4}
+.tab-rolar{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:.4rem 0 .6rem}
+.tab-rolar button{font:600 .82rem var(--titulo);padding:.4rem .9rem;background:var(--tinta);color:#fff;border:1px solid var(--tinta);cursor:pointer;transition:filter .15s}
+@media (hover:hover){.tab-rolar button:hover{filter:brightness(1.12)}}
+.tab-modo{display:inline-flex;align-items:center;gap:.4rem;font-size:.88rem}
+.tab-modo select{border:0;border-bottom:1px solid var(--tinta);background:transparent;font:inherit;padding:.2rem}
+.tab-resultado{font:700 .95rem var(--titulo);color:var(--tinta)}
+.tab-resultado.nova{animation:pop .3s var(--ease)}
+.tab-rolavel{overflow-x:auto}
+table.tab{width:100%;border-collapse:collapse;font-size:.9rem}
+table.tab th,table.tab td{padding:.35rem .55rem;text-align:left;vertical-align:top;border-bottom:1px solid var(--linha)}
+table.tab thead th{font:700 .72rem var(--titulo);text-transform:uppercase;letter-spacing:.06em;color:var(--tinta);border-bottom:1px solid var(--tinta);white-space:nowrap}
+table.tab tbody th{font-weight:700;white-space:nowrap}
+table.tab tbody tr{transition:background .2s}
+table.tab tbody tr.sorteado{background:rgba(179,50,44,.16);box-shadow:inset 3px 0 0 var(--tinta)}
+table.tab tbody tr.sorteado th,table.tab tbody tr.sorteado td{font-weight:700}
+.tab-extra{margin:.6rem 0 0;padding:.5rem .7rem;border-left:3px solid var(--tinta);font-size:.88rem;font-style:italic;line-height:1.4}
+@media (max-width:700px){.tab-busca input{min-width:0;width:100%}.tab-locais{width:100%;overflow-x:auto;flex-wrap:nowrap}.tab-locais button{white-space:nowrap}}
+.tab-card>summary{color:var(--texto);font-weight:400}
+.tab-quando{color:var(--texto);font-weight:400}
